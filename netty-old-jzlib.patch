@@ -1,0 +1,91 @@
+--- codec/src/main/java/io/netty/handler/codec/compression/JZlibEncoder.java.orig	2015-07-03 11:47:23.545978767 +0100
++++ codec/src/main/java/io/netty/handler/codec/compression/JZlibEncoder.java	2015-07-03 11:47:33.284855182 +0100
+@@ -140,8 +140,7 @@
+         }
+ 
+         int resultCode = z.init(
+-                compressionLevel, windowBits, memLevel,
+-                ZlibUtil.convertWrapperType(wrapper));
++                compressionLevel, windowBits, memLevel);
+         if (resultCode != JZlib.Z_OK) {
+             ZlibUtil.fail(z, "initialization failure", resultCode);
+         }
+@@ -225,8 +225,7 @@
+         }
+         int resultCode;
+         resultCode = z.deflateInit(
+-                compressionLevel, windowBits, memLevel,
+-                JZlib.W_ZLIB); // Default: ZLIB format
++                compressionLevel, windowBits, memLevel);
+         if (resultCode != JZlib.Z_OK) {
+             ZlibUtil.fail(z, "initialization failure", resultCode);
+         } else {
+--- codec/src/main/java/io/netty/handler/codec/compression/JZlibDecoder.java.orig	2015-07-03 11:45:12.040647549 +0100
++++ codec/src/main/java/io/netty/handler/codec/compression/JZlibDecoder.java	2015-07-03 11:45:42.114265920 +0100
+@@ -47,7 +47,7 @@
+             throw new NullPointerException("wrapper");
+         }
+ 
+-        int resultCode = z.init(ZlibUtil.convertWrapperType(wrapper));
++        int resultCode = z.init();
+         if (resultCode != JZlib.Z_OK) {
+             ZlibUtil.fail(z, "initialization failure", resultCode);
+         }
+@@ -67,7 +67,7 @@
+         this.dictionary = dictionary;
+ 
+         int resultCode;
+-        resultCode = z.inflateInit(JZlib.W_ZLIB);
++        resultCode = z.inflateInit();
+         if (resultCode != JZlib.Z_OK) {
+             ZlibUtil.fail(z, "initialization failure", resultCode);
+         }
+--- codec/src/main/java/io/netty/handler/codec/compression/ZlibUtil.java.orig	2015-07-03 11:51:33.209807700 +0100
++++ codec/src/main/java/io/netty/handler/codec/compression/ZlibUtil.java	2015-07-03 11:58:07.594767969 +0100
+@@ -17,7 +17,6 @@
+ 
+ import com.jcraft.jzlib.Deflater;
+ import com.jcraft.jzlib.Inflater;
+-import com.jcraft.jzlib.JZlib;
+ 
+ /**
+  * Utility methods used by {@link JZlibEncoder} and {@link JZlibDecoder}.
+@@ -40,27 +39,6 @@
+         return new CompressionException(message + " (" + resultCode + ')' + (z.msg != null? ": " + z.msg : ""));
+     }
+ 
+-    static JZlib.WrapperType convertWrapperType(ZlibWrapper wrapper) {
+-        JZlib.WrapperType convertedWrapperType;
+-        switch (wrapper) {
+-        case NONE:
+-            convertedWrapperType = JZlib.W_NONE;
+-            break;
+-        case ZLIB:
+-            convertedWrapperType = JZlib.W_ZLIB;
+-            break;
+-        case GZIP:
+-            convertedWrapperType = JZlib.W_GZIP;
+-            break;
+-        case ZLIB_OR_NONE:
+-            convertedWrapperType = JZlib.W_ANY;
+-            break;
+-        default:
+-            throw new Error();
+-        }
+-        return convertedWrapperType;
+-    }
+-
+     static int wrapperOverhead(ZlibWrapper wrapper) {
+         int overhead;
+         switch (wrapper) {
+--- codec-http/src/main/java/io/netty/handler/codec/spdy/SpdyHeaderBlockJZlibEncoder.java.orig	2015-07-03 12:04:31.063867729 +0100
++++ codec-http/src/main/java/io/netty/handler/codec/spdy/SpdyHeaderBlockJZlibEncoder.java	2015-07-03 12:04:39.829755712 +0100
+@@ -47,7 +47,7 @@
+         }
+ 
+         int resultCode = z.deflateInit(
+-                compressionLevel, windowBits, memLevel, JZlib.W_ZLIB);
++                compressionLevel, windowBits, memLevel);
+         if (resultCode != JZlib.Z_OK) {
+             throw new CompressionException(
+                     "failed to initialize an SPDY header block deflater: " + resultCode);
