@@ -1,0 +1,2488 @@
+From 197d3dfbc0c7e664443e792e879c8e9a68d915b9 Mon Sep 17 00:00:00 2001
+From: Severin Gehwolf <sgehwolf@redhat.com>
+Date: Tue, 12 Nov 2013 17:16:36 +0100
+Subject: [PATCH] RHSCL jboss logging/marshalling patch.
+
+---
+ .../microcontainer/NettyLoggerConfigurator.java    |   4 +-
+ .../codec/marshalling/ChannelBufferByteInput.java  |  75 ---------
+ .../codec/marshalling/ChannelBufferByteOutput.java |  76 ---------
+ .../marshalling/CompatibleMarshallingDecoder.java  | 120 --------------
+ .../marshalling/CompatibleMarshallingEncoder.java  |  60 -------
+ .../ContextBoundUnmarshallerProvider.java          |  49 ------
+ .../marshalling/DefaultMarshallerProvider.java     |  49 ------
+ .../marshalling/DefaultUnmarshallerProvider.java   |  48 ------
+ .../codec/marshalling/LimitingByteInput.java       | 103 ------------
+ .../codec/marshalling/MarshallerProvider.java      |  32 ----
+ .../codec/marshalling/MarshallingDecoder.java      |  90 -----------
+ .../codec/marshalling/MarshallingEncoder.java      |  92 -----------
+ .../marshalling/ThreadLocalMarshallerProvider.java |  57 -------
+ .../ThreadLocalUnmarshallerProvider.java           |  56 -------
+ .../codec/marshalling/UnmarshallerProvider.java    |  31 ----
+ .../handler/codec/marshalling/package-info.java    |  21 ---
+ .../java/org/jboss/netty/logging/JBossLogger.java  |  86 ----------
+ .../jboss/netty/logging/JBossLoggerFactory.java    |  34 ----
+ .../AbstractCompatibleMarshallingDecoderTest.java  | 140 ----------------
+ .../AbstractCompatibleMarshallingEncoderTest.java  |  76 ---------
+ .../RiverCompatibleMarshallingDecoderTest.java     |  37 -----
+ .../RiverCompatibleMarshallingEncoderTest.java     |  38 -----
+ ...ntextBoundCompatibleMarshallingDecoderTest.java |  29 ----
+ .../RiverContextBoundMarshallingDecoderTest.java   |  29 ----
+ .../marshalling/RiverMarshallingDecoderTest.java   |  37 -----
+ .../marshalling/RiverMarshallingEncoderTest.java   |  34 ----
+ ...hreadLocalCompatibleMarshallingDecoderTest.java |  29 ----
+ ...hreadLocalCompatibleMarshallingEncoderTest.java |  25 ---
+ .../RiverThreadLocalMarshallingDecoderTest.java    |  29 ----
+ .../RiverThreadLocalMarshallingEncoderTest.java    |  25 ---
+ .../SerialCompatibleMarshallingDecoderTest.java    |  37 -----
+ .../SerialCompatibleMarshallingEncoderTest.java    |  38 -----
+ ...ntextBoundCompatibleMarshallingDecoderTest.java |  29 ----
+ .../SerialContextBoundMarshallingDecoderTest.java  |  29 ----
+ .../marshalling/SerialMarshallingDecoderTest.java  |  36 -----
+ .../marshalling/SerialMarshallingEncoderTest.java  |  34 ----
+ ...hreadLocalCompatibleMarshallingDecoderTest.java |  29 ----
+ ...hreadLocalCompatibleMarshallingEncoderTest.java |  25 ---
+ .../SerialThreadLocalMarshallingDecoderTest.java   |  29 ----
+ .../SerialThreadLocalMarshallingEncoderTest.java   |  25 ---
+ .../netty/logging/JBossLoggerFactoryTest.java      |  30 ----
+ .../org/jboss/netty/logging/JBossLoggerTest.java   | 180 ---------------------
+ 42 files changed, 2 insertions(+), 2130 deletions(-)
+ delete mode 100644 src/main/java/org/jboss/netty/handler/codec/marshalling/ChannelBufferByteInput.java
+ delete mode 100644 src/main/java/org/jboss/netty/handler/codec/marshalling/ChannelBufferByteOutput.java
+ delete mode 100644 src/main/java/org/jboss/netty/handler/codec/marshalling/CompatibleMarshallingDecoder.java
+ delete mode 100644 src/main/java/org/jboss/netty/handler/codec/marshalling/CompatibleMarshallingEncoder.java
+ delete mode 100644 src/main/java/org/jboss/netty/handler/codec/marshalling/ContextBoundUnmarshallerProvider.java
+ delete mode 100644 src/main/java/org/jboss/netty/handler/codec/marshalling/DefaultMarshallerProvider.java
+ delete mode 100644 src/main/java/org/jboss/netty/handler/codec/marshalling/DefaultUnmarshallerProvider.java
+ delete mode 100644 src/main/java/org/jboss/netty/handler/codec/marshalling/LimitingByteInput.java
+ delete mode 100644 src/main/java/org/jboss/netty/handler/codec/marshalling/MarshallerProvider.java
+ delete mode 100644 src/main/java/org/jboss/netty/handler/codec/marshalling/MarshallingDecoder.java
+ delete mode 100644 src/main/java/org/jboss/netty/handler/codec/marshalling/MarshallingEncoder.java
+ delete mode 100644 src/main/java/org/jboss/netty/handler/codec/marshalling/ThreadLocalMarshallerProvider.java
+ delete mode 100644 src/main/java/org/jboss/netty/handler/codec/marshalling/ThreadLocalUnmarshallerProvider.java
+ delete mode 100644 src/main/java/org/jboss/netty/handler/codec/marshalling/UnmarshallerProvider.java
+ delete mode 100644 src/main/java/org/jboss/netty/handler/codec/marshalling/package-info.java
+ delete mode 100644 src/main/java/org/jboss/netty/logging/JBossLogger.java
+ delete mode 100644 src/main/java/org/jboss/netty/logging/JBossLoggerFactory.java
+ delete mode 100644 src/test/java/org/jboss/netty/handler/codec/marshalling/AbstractCompatibleMarshallingDecoderTest.java
+ delete mode 100644 src/test/java/org/jboss/netty/handler/codec/marshalling/AbstractCompatibleMarshallingEncoderTest.java
+ delete mode 100644 src/test/java/org/jboss/netty/handler/codec/marshalling/RiverCompatibleMarshallingDecoderTest.java
+ delete mode 100644 src/test/java/org/jboss/netty/handler/codec/marshalling/RiverCompatibleMarshallingEncoderTest.java
+ delete mode 100644 src/test/java/org/jboss/netty/handler/codec/marshalling/RiverContextBoundCompatibleMarshallingDecoderTest.java
+ delete mode 100644 src/test/java/org/jboss/netty/handler/codec/marshalling/RiverContextBoundMarshallingDecoderTest.java
+ delete mode 100644 src/test/java/org/jboss/netty/handler/codec/marshalling/RiverMarshallingDecoderTest.java
+ delete mode 100644 src/test/java/org/jboss/netty/handler/codec/marshalling/RiverMarshallingEncoderTest.java
+ delete mode 100644 src/test/java/org/jboss/netty/handler/codec/marshalling/RiverThreadLocalCompatibleMarshallingDecoderTest.java
+ delete mode 100644 src/test/java/org/jboss/netty/handler/codec/marshalling/RiverThreadLocalCompatibleMarshallingEncoderTest.java
+ delete mode 100644 src/test/java/org/jboss/netty/handler/codec/marshalling/RiverThreadLocalMarshallingDecoderTest.java
+ delete mode 100644 src/test/java/org/jboss/netty/handler/codec/marshalling/RiverThreadLocalMarshallingEncoderTest.java
+ delete mode 100644 src/test/java/org/jboss/netty/handler/codec/marshalling/SerialCompatibleMarshallingDecoderTest.java
+ delete mode 100644 src/test/java/org/jboss/netty/handler/codec/marshalling/SerialCompatibleMarshallingEncoderTest.java
+ delete mode 100644 src/test/java/org/jboss/netty/handler/codec/marshalling/SerialContextBoundCompatibleMarshallingDecoderTest.java
+ delete mode 100644 src/test/java/org/jboss/netty/handler/codec/marshalling/SerialContextBoundMarshallingDecoderTest.java
+ delete mode 100644 src/test/java/org/jboss/netty/handler/codec/marshalling/SerialMarshallingDecoderTest.java
+ delete mode 100644 src/test/java/org/jboss/netty/handler/codec/marshalling/SerialMarshallingEncoderTest.java
+ delete mode 100644 src/test/java/org/jboss/netty/handler/codec/marshalling/SerialThreadLocalCompatibleMarshallingDecoderTest.java
+ delete mode 100644 src/test/java/org/jboss/netty/handler/codec/marshalling/SerialThreadLocalCompatibleMarshallingEncoderTest.java
+ delete mode 100644 src/test/java/org/jboss/netty/handler/codec/marshalling/SerialThreadLocalMarshallingDecoderTest.java
+ delete mode 100644 src/test/java/org/jboss/netty/handler/codec/marshalling/SerialThreadLocalMarshallingEncoderTest.java
+ delete mode 100644 src/test/java/org/jboss/netty/logging/JBossLoggerFactoryTest.java
+ delete mode 100644 src/test/java/org/jboss/netty/logging/JBossLoggerTest.java
+
+diff --git a/src/main/java/org/jboss/netty/container/microcontainer/NettyLoggerConfigurator.java b/src/main/java/org/jboss/netty/container/microcontainer/NettyLoggerConfigurator.java
+index 6595337..4e94481 100644
+--- a/src/main/java/org/jboss/netty/container/microcontainer/NettyLoggerConfigurator.java
++++ b/src/main/java/org/jboss/netty/container/microcontainer/NettyLoggerConfigurator.java
+@@ -16,13 +16,13 @@
+ package org.jboss.netty.container.microcontainer;
+ 
+ import org.jboss.netty.logging.InternalLoggerFactory;
+-import org.jboss.netty.logging.JBossLoggerFactory;
++import org.jboss.netty.logging.JdkLoggerFactory;
+ 
+ /**
+  * A bean that configures the default {@link InternalLoggerFactory}.
+  */
+ public class NettyLoggerConfigurator {
+     public NettyLoggerConfigurator() {
+-        InternalLoggerFactory.setDefaultFactory(new JBossLoggerFactory());
++        InternalLoggerFactory.setDefaultFactory(new JdkLoggerFactory());
+     }
+ }
+diff --git a/src/main/java/org/jboss/netty/handler/codec/marshalling/ChannelBufferByteInput.java b/src/main/java/org/jboss/netty/handler/codec/marshalling/ChannelBufferByteInput.java
+deleted file mode 100644
+index bf81839..0000000
+--- a/src/main/java/org/jboss/netty/handler/codec/marshalling/ChannelBufferByteInput.java
++++ /dev/null
+@@ -1,75 +0,0 @@
+-/*
+- * Copyright 2012 The Netty Project
+- *
+- * The Netty Project licenses this file to you under the Apache License,
+- * version 2.0 (the "License"); you may not use this file except in compliance
+- * with the License. You may obtain a copy of the License at:
+- *
+- *   http://www.apache.org/licenses/LICENSE-2.0
+- *
+- * Unless required by applicable law or agreed to in writing, software
+- * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+- * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+- * License for the specific language governing permissions and limitations
+- * under the License.
+- */
+-package org.jboss.netty.handler.codec.marshalling;
+-
+-import java.io.IOException;
+-
+-import org.jboss.marshalling.ByteInput;
+-import org.jboss.netty.buffer.ChannelBuffer;
+-
+-/**
+- * {@link ByteInput} implementation which reads its data from a {@link ChannelBuffer}
+- *
+- *
+- */
+-class ChannelBufferByteInput implements ByteInput {
+-
+-    private final ChannelBuffer buffer;
+-
+-    public ChannelBufferByteInput(ChannelBuffer buffer) {
+-        this.buffer = buffer;
+-    }
+-
+-    public void close() throws IOException {
+-        // nothing to do
+-    }
+-
+-    public int available() throws IOException {
+-        return buffer.readableBytes();
+-    }
+-
+-    public int read() throws IOException {
+-        if (buffer.readable()) {
+-            return buffer.readByte() & 0xff;
+-        }
+-        return -1;
+-    }
+-
+-    public int read(byte[] array) throws IOException {
+-        return read(array, 0, array.length);
+-    }
+-
+-    public int read(byte[] dst, int dstIndex, int length) throws IOException {
+-        int available = available();
+-        if (available == 0) {
+-            return -1;
+-        }
+-
+-        length = Math.min(available, length);
+-        buffer.readBytes(dst, dstIndex, length);
+-        return length;
+-    }
+-
+-    public long skip(long bytes) throws IOException {
+-        int readable = buffer.readableBytes();
+-        if (readable < bytes) {
+-            bytes = readable;
+-        }
+-        buffer.readerIndex((int) (buffer.readerIndex() + bytes));
+-        return bytes;
+-    }
+-
+-}
+diff --git a/src/main/java/org/jboss/netty/handler/codec/marshalling/ChannelBufferByteOutput.java b/src/main/java/org/jboss/netty/handler/codec/marshalling/ChannelBufferByteOutput.java
+deleted file mode 100644
+index ddb9d8b..0000000
+--- a/src/main/java/org/jboss/netty/handler/codec/marshalling/ChannelBufferByteOutput.java
++++ /dev/null
+@@ -1,76 +0,0 @@
+-/*
+- * Copyright 2012 The Netty Project
+- *
+- * The Netty Project licenses this file to you under the Apache License,
+- * version 2.0 (the "License"); you may not use this file except in compliance
+- * with the License. You may obtain a copy of the License at:
+- *
+- *   http://www.apache.org/licenses/LICENSE-2.0
+- *
+- * Unless required by applicable law or agreed to in writing, software
+- * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+- * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+- * License for the specific language governing permissions and limitations
+- * under the License.
+- */
+-package org.jboss.netty.handler.codec.marshalling;
+-
+-import java.io.IOException;
+-
+-import org.jboss.marshalling.ByteOutput;
+-import org.jboss.netty.buffer.ChannelBuffer;
+-import org.jboss.netty.buffer.ChannelBufferFactory;
+-import org.jboss.netty.buffer.ChannelBuffers;
+-
+-/**
+- * {@link ByteOutput} implementation which writes the data to a {@link ChannelBuffer}
+- *
+- *
+- */
+-class ChannelBufferByteOutput implements ByteOutput {
+-
+-    private final ChannelBuffer buffer;
+-
+-    /**
+-     * Create a new instance which use the given {@link ChannelBuffer}
+-     */
+-    public ChannelBufferByteOutput(ChannelBuffer buffer) {
+-        this.buffer = buffer;
+-    }
+-
+-    /**
+-     * Calls {@link #ChannelBufferByteOutput(ChannelBuffer)} with a dynamic {@link ChannelBuffer}
+-     */
+-    public ChannelBufferByteOutput(ChannelBufferFactory factory, int estimatedLength) {
+-        this(ChannelBuffers.dynamicBuffer(estimatedLength, factory));
+-    }
+-
+-    public void close() throws IOException {
+-        // Nothing todo
+-    }
+-
+-    public void flush() throws IOException {
+-        // nothing to do
+-    }
+-
+-    public void write(int b) throws IOException {
+-        buffer.writeByte(b);
+-    }
+-
+-    public void write(byte[] bytes) throws IOException {
+-        buffer.writeBytes(bytes);
+-    }
+-
+-    public void write(byte[] bytes, int srcIndex, int length) throws IOException {
+-        buffer.writeBytes(bytes, srcIndex, length);
+-    }
+-
+-    /**
+-     * Return the {@link ChannelBuffer} which contains the written content
+-     *
+-     */
+-    public ChannelBuffer getBuffer() {
+-        return buffer;
+-    }
+-
+-}
+diff --git a/src/main/java/org/jboss/netty/handler/codec/marshalling/CompatibleMarshallingDecoder.java b/src/main/java/org/jboss/netty/handler/codec/marshalling/CompatibleMarshallingDecoder.java
+deleted file mode 100644
+index b65eced..0000000
+--- a/src/main/java/org/jboss/netty/handler/codec/marshalling/CompatibleMarshallingDecoder.java
++++ /dev/null
+@@ -1,120 +0,0 @@
+-/*
+- * Copyright 2012 The Netty Project
+- *
+- * The Netty Project licenses this file to you under the Apache License,
+- * version 2.0 (the "License"); you may not use this file except in compliance
+- * with the License. You may obtain a copy of the License at:
+- *
+- *   http://www.apache.org/licenses/LICENSE-2.0
+- *
+- * Unless required by applicable law or agreed to in writing, software
+- * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+- * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+- * License for the specific language governing permissions and limitations
+- * under the License.
+- */
+-package org.jboss.netty.handler.codec.marshalling;
+-
+-import org.jboss.marshalling.ByteInput;
+-import org.jboss.marshalling.Unmarshaller;
+-import org.jboss.netty.buffer.ChannelBuffer;
+-import org.jboss.netty.channel.Channel;
+-import org.jboss.netty.channel.ChannelHandlerContext;
+-import org.jboss.netty.channel.ExceptionEvent;
+-import org.jboss.netty.handler.codec.frame.TooLongFrameException;
+-import org.jboss.netty.handler.codec.replay.ReplayingDecoder;
+-import org.jboss.netty.handler.codec.replay.VoidEnum;
+-
+-import java.io.ObjectStreamConstants;
+-
+-/**
+- * {@link ReplayingDecoder} which use an {@link Unmarshaller} to read the Object out of the {@link ChannelBuffer}.
+- *
+- * If you can you should use {@link MarshallingDecoder}.
+- *
+- *
+- *
+- */
+-public class CompatibleMarshallingDecoder extends ReplayingDecoder<VoidEnum> {
+-    protected final UnmarshallerProvider provider;
+-    protected final int maxObjectSize;
+-    private boolean discardingTooLongFrame;
+-
+-    /**
+-     * Create a new instance of {@link CompatibleMarshallingDecoder}.
+-     *
+-     * @param provider
+-     *        the {@link UnmarshallerProvider} which is used to obtain the {@link Unmarshaller}
+-     *        for the {@link Channel}
+-     * @param maxObjectSize
+-     *        the maximal size (in bytes) of the {@link Object} to unmarshal. Once the size is
+-     *        exceeded the {@link Channel} will get closed. Use a a maxObjectSize of
+-     *        {@link Integer#MAX_VALUE} to disable this. You should only do this if you are sure
+-     *        that the received Objects will never be big and the sending side are trusted, as
+-     *        this opens the possibility for a DOS-Attack due an {@link OutOfMemoryError}.
+-     */
+-    public CompatibleMarshallingDecoder(UnmarshallerProvider provider, int maxObjectSize) {
+-        this.provider = provider;
+-        this.maxObjectSize = maxObjectSize;
+-    }
+-
+-    @Override
+-    protected Object decode(
+-            ChannelHandlerContext ctx, Channel channel, ChannelBuffer buffer, VoidEnum state) throws Exception {
+-        if (discardingTooLongFrame) {
+-            buffer.skipBytes(actualReadableBytes());
+-            checkpoint();
+-            return null;
+-        }
+-
+-        Unmarshaller unmarshaller = provider.getUnmarshaller(ctx);
+-        ByteInput input = new ChannelBufferByteInput(buffer);
+-        if (maxObjectSize != Integer.MAX_VALUE) {
+-            input = new LimitingByteInput(input, maxObjectSize);
+-        }
+-        try {
+-            unmarshaller.start(input);
+-            Object obj = unmarshaller.readObject();
+-            unmarshaller.finish();
+-            return obj;
+-        } catch (LimitingByteInput.TooBigObjectException e) {
+-            discardingTooLongFrame = true;
+-            throw new TooLongFrameException();
+-        } finally {
+-            // Call close in a finally block as the ReplayingDecoder will throw an Error if not enough bytes are
+-            // readable. This helps to be sure that we do not leak resource
+-            unmarshaller.close();
+-        }
+-    }
+-
+-    @Override
+-    protected Object decodeLast(ChannelHandlerContext ctx, Channel channel,
+-            ChannelBuffer buffer, VoidEnum state)
+-            throws Exception {
+-        switch (buffer.readableBytes()) {
+-        case 0:
+-            return null;
+-        case 1:
+-            // Ignore the last TC_RESET
+-            if (buffer.getByte(buffer.readerIndex()) == ObjectStreamConstants.TC_RESET) {
+-                buffer.skipBytes(1);
+-                return null;
+-            }
+-        }
+-
+-        Object decoded = decode(ctx, channel, buffer, state);
+-        return decoded;
+-    }
+-
+-    /**
+-     * Calls {@link Channel#close()} if a TooLongFrameException was thrown
+-     */
+-    @Override
+-    public void exceptionCaught(ChannelHandlerContext ctx, ExceptionEvent e) throws Exception {
+-        if (e.getCause() instanceof TooLongFrameException) {
+-            e.getChannel().close();
+-        } else {
+-            super.exceptionCaught(ctx, e);
+-        }
+-    }
+-}
+diff --git a/src/main/java/org/jboss/netty/handler/codec/marshalling/CompatibleMarshallingEncoder.java b/src/main/java/org/jboss/netty/handler/codec/marshalling/CompatibleMarshallingEncoder.java
+deleted file mode 100644
+index ded98a5..0000000
+--- a/src/main/java/org/jboss/netty/handler/codec/marshalling/CompatibleMarshallingEncoder.java
++++ /dev/null
+@@ -1,60 +0,0 @@
+-/*
+- * Copyright 2012 The Netty Project
+- *
+- * The Netty Project licenses this file to you under the Apache License,
+- * version 2.0 (the "License"); you may not use this file except in compliance
+- * with the License. You may obtain a copy of the License at:
+- *
+- *   http://www.apache.org/licenses/LICENSE-2.0
+- *
+- * Unless required by applicable law or agreed to in writing, software
+- * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+- * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+- * License for the specific language governing permissions and limitations
+- * under the License.
+- */
+-package org.jboss.netty.handler.codec.marshalling;
+-
+-import org.jboss.marshalling.Marshaller;
+-import org.jboss.netty.channel.Channel;
+-import org.jboss.netty.channel.ChannelHandler.Sharable;
+-import org.jboss.netty.channel.ChannelHandlerContext;
+-import org.jboss.netty.handler.codec.oneone.OneToOneEncoder;
+-
+-/**
+- * {@link OneToOneEncoder} implementation which uses JBoss Marshalling to marshal
+- * an Object.
+- *
+- * See <a href="http://www.jboss.org/jbossmarshalling">JBoss Marshalling website</a>
+- * for more informations
+- *
+- * Use {@link MarshallingEncoder} if possible.
+- *
+- */
+-@Sharable
+-public class CompatibleMarshallingEncoder extends OneToOneEncoder {
+-
+-    private final MarshallerProvider provider;
+-
+-    /**
+-     * Create a new instance of the {@link CompatibleMarshallingEncoder}
+-     *
+-     * @param provider  the {@link MarshallerProvider} to use to get the {@link Marshaller} for a {@link Channel}
+-     */
+-    public CompatibleMarshallingEncoder(MarshallerProvider provider) {
+-        this.provider = provider;
+-    }
+-
+-    @Override
+-    protected Object encode(ChannelHandlerContext ctx, Channel channel, Object msg) throws Exception {
+-        Marshaller marshaller = provider.getMarshaller(ctx);
+-        ChannelBufferByteOutput output =
+-                new ChannelBufferByteOutput(ctx.getChannel().getConfig().getBufferFactory(), 256);
+-        marshaller.start(output);
+-        marshaller.writeObject(msg);
+-        marshaller.finish();
+-        marshaller.close();
+-
+-        return output.getBuffer();
+-    }
+-}
+diff --git a/src/main/java/org/jboss/netty/handler/codec/marshalling/ContextBoundUnmarshallerProvider.java b/src/main/java/org/jboss/netty/handler/codec/marshalling/ContextBoundUnmarshallerProvider.java
+deleted file mode 100644
+index cd3c332..0000000
+--- a/src/main/java/org/jboss/netty/handler/codec/marshalling/ContextBoundUnmarshallerProvider.java
++++ /dev/null
+@@ -1,49 +0,0 @@
+-/*
+- * Copyright 2012 The Netty Project
+- *
+- * The Netty Project licenses this file to you under the Apache License,
+- * version 2.0 (the "License"); you may not use this file except in compliance
+- * with the License. You may obtain a copy of the License at:
+- *
+- *   http://www.apache.org/licenses/LICENSE-2.0
+- *
+- * Unless required by applicable law or agreed to in writing, software
+- * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+- * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+- * License for the specific language governing permissions and limitations
+- * under the License.
+- */
+-package org.jboss.netty.handler.codec.marshalling;
+-
+-import org.jboss.marshalling.MarshallerFactory;
+-import org.jboss.marshalling.MarshallingConfiguration;
+-import org.jboss.marshalling.Unmarshaller;
+-import org.jboss.netty.channel.Channel;
+-import org.jboss.netty.channel.ChannelHandler;
+-import org.jboss.netty.channel.ChannelHandlerContext;
+-
+-/**
+- * {@link UnmarshallerProvider} which store a reference to the {@link Unmarshaller} in the
+- * {@link ChannelHandlerContext} via the {@link ChannelHandlerContext#setAttachment(Object)}
+- * method. So the same {@link Unmarshaller} will be used during the life-time of a {@link Channel}
+- * for the {@link ChannelHandler}'s {@link ChannelHandlerContext}.
+- *
+- *
+- */
+-public class ContextBoundUnmarshallerProvider extends DefaultUnmarshallerProvider {
+-
+-    public ContextBoundUnmarshallerProvider(MarshallerFactory factory, MarshallingConfiguration config) {
+-        super(factory, config);
+-    }
+-
+-    @Override
+-    public Unmarshaller getUnmarshaller(ChannelHandlerContext ctx) throws Exception {
+-        Unmarshaller unmarshaller = (Unmarshaller) ctx.getAttachment();
+-        if (unmarshaller == null) {
+-            unmarshaller = super.getUnmarshaller(ctx);
+-            ctx.setAttachment(unmarshaller);
+-        }
+-        return unmarshaller;
+-    }
+-
+-}
+diff --git a/src/main/java/org/jboss/netty/handler/codec/marshalling/DefaultMarshallerProvider.java b/src/main/java/org/jboss/netty/handler/codec/marshalling/DefaultMarshallerProvider.java
+deleted file mode 100644
+index b0550f8..0000000
+--- a/src/main/java/org/jboss/netty/handler/codec/marshalling/DefaultMarshallerProvider.java
++++ /dev/null
+@@ -1,49 +0,0 @@
+-/*
+- * Copyright 2012 The Netty Project
+- *
+- * The Netty Project licenses this file to you under the Apache License,
+- * version 2.0 (the "License"); you may not use this file except in compliance
+- * with the License. You may obtain a copy of the License at:
+- *
+- *   http://www.apache.org/licenses/LICENSE-2.0
+- *
+- * Unless required by applicable law or agreed to in writing, software
+- * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+- * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+- * License for the specific language governing permissions and limitations
+- * under the License.
+- */
+-package org.jboss.netty.handler.codec.marshalling;
+-
+-import org.jboss.marshalling.Marshaller;
+-import org.jboss.marshalling.MarshallerFactory;
+-import org.jboss.marshalling.MarshallingConfiguration;
+-import org.jboss.netty.channel.ChannelHandlerContext;
+-
+-/**
+- * Default implementation of {@link MarshallerProvider} which just create a new {@link Marshaller}
+- * on ever {@link #getMarshaller(ChannelHandlerContext)} call.
+- *
+- *
+- */
+-public class DefaultMarshallerProvider implements MarshallerProvider {
+-
+-    private final MarshallerFactory factory;
+-    private final MarshallingConfiguration config;
+-
+-    /**
+-     * Create a new instance
+-     *
+-     * @param factory   the {@link MarshallerFactory} to use to create {@link Marshaller}
+-     * @param config    the {@link MarshallingConfiguration}
+-     */
+-    public DefaultMarshallerProvider(MarshallerFactory factory, MarshallingConfiguration config) {
+-        this.factory = factory;
+-        this.config = config;
+-    }
+-
+-    public Marshaller getMarshaller(ChannelHandlerContext ctx) throws Exception {
+-        return factory.createMarshaller(config);
+-    }
+-
+-}
+diff --git a/src/main/java/org/jboss/netty/handler/codec/marshalling/DefaultUnmarshallerProvider.java b/src/main/java/org/jboss/netty/handler/codec/marshalling/DefaultUnmarshallerProvider.java
+deleted file mode 100644
+index f36ce85..0000000
+--- a/src/main/java/org/jboss/netty/handler/codec/marshalling/DefaultUnmarshallerProvider.java
++++ /dev/null
+@@ -1,48 +0,0 @@
+-/*
+- * Copyright 2012 The Netty Project
+- *
+- * The Netty Project licenses this file to you under the Apache License,
+- * version 2.0 (the "License"); you may not use this file except in compliance
+- * with the License. You may obtain a copy of the License at:
+- *
+- *   http://www.apache.org/licenses/LICENSE-2.0
+- *
+- * Unless required by applicable law or agreed to in writing, software
+- * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+- * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+- * License for the specific language governing permissions and limitations
+- * under the License.
+- */
+-package org.jboss.netty.handler.codec.marshalling;
+-
+-import org.jboss.marshalling.MarshallerFactory;
+-import org.jboss.marshalling.MarshallingConfiguration;
+-import org.jboss.marshalling.Unmarshaller;
+-import org.jboss.netty.channel.ChannelHandlerContext;
+-
+-/**
+- * Default implementation of {@link UnmarshallerProvider} which will just create a new {@link Unmarshaller}
+- * on every call to {@link #getUnmarshaller(ChannelHandlerContext)}
+- *
+- */
+-public class DefaultUnmarshallerProvider implements UnmarshallerProvider {
+-
+-    private final MarshallerFactory factory;
+-    private final MarshallingConfiguration config;
+-
+-    /**
+-     * Create a new instance of {@link DefaultMarshallerProvider}
+-     *
+-     * @param factory   the {@link MarshallerFactory} to use to create {@link Unmarshaller}
+-     * @param config    the {@link MarshallingConfiguration}
+-     */
+-    public DefaultUnmarshallerProvider(MarshallerFactory factory, MarshallingConfiguration config) {
+-        this.factory = factory;
+-        this.config = config;
+-    }
+-
+-    public Unmarshaller getUnmarshaller(ChannelHandlerContext ctx) throws Exception {
+-        return factory.createUnmarshaller(config);
+-    }
+-
+-}
+diff --git a/src/main/java/org/jboss/netty/handler/codec/marshalling/LimitingByteInput.java b/src/main/java/org/jboss/netty/handler/codec/marshalling/LimitingByteInput.java
+deleted file mode 100644
+index f4445d4..0000000
+--- a/src/main/java/org/jboss/netty/handler/codec/marshalling/LimitingByteInput.java
++++ /dev/null
+@@ -1,103 +0,0 @@
+-/*
+- * Copyright 2012 The Netty Project
+- *
+- * The Netty Project licenses this file to you under the Apache License,
+- * version 2.0 (the "License"); you may not use this file except in compliance
+- * with the License. You may obtain a copy of the License at:
+- *
+- *   http://www.apache.org/licenses/LICENSE-2.0
+- *
+- * Unless required by applicable law or agreed to in writing, software
+- * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+- * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+- * License for the specific language governing permissions and limitations
+- * under the License.
+- */
+-package org.jboss.netty.handler.codec.marshalling;
+-
+-import java.io.IOException;
+-
+-import org.jboss.marshalling.ByteInput;
+-
+-/**
+- * {@link ByteInput} implementation which wraps another {@link ByteInput} and throws a {@link TooBigObjectException}
+- * if the read limit was reached.
+- *
+- *
+- */
+-class LimitingByteInput implements ByteInput {
+-
+-    // Use a static instance here to remove the overhead of fillStacktrace
+-    private static final TooBigObjectException EXCEPTION = new TooBigObjectException();
+-
+-    private final ByteInput input;
+-    private final long limit;
+-    private long read;
+-
+-    public LimitingByteInput(ByteInput input, long limit) {
+-        if (limit <= 0) {
+-            throw new IllegalArgumentException("The limit MUST be > 0");
+-        }
+-        this.input = input;
+-        this.limit = limit;
+-    }
+-
+-    public void close() throws IOException {
+-        // Nothing todo
+-    }
+-
+-    public int available() throws IOException {
+-        int available = input.available();
+-        int readable = readable(available);
+-        return readable;
+-    }
+-
+-    public int read() throws IOException {
+-        int readable = readable(1);
+-        if (readable > 0) {
+-            int b = input.read();
+-            read++;
+-            return b;
+-        } else {
+-            throw EXCEPTION;
+-        }
+-    }
+-
+-    public int read(byte[] array) throws IOException {
+-        return read(array, 0, array.length);
+-    }
+-
+-    public int read(byte[] array, int offset, int length) throws IOException {
+-        int readable = readable(length);
+-        if (readable > 0) {
+-            int i = input.read(array, offset, readable);
+-            read += i;
+-            return i;
+-        } else {
+-            throw EXCEPTION;
+-        }
+-    }
+-
+-    public long skip(long bytes) throws IOException {
+-        int readable = readable((int) bytes);
+-        if (readable > 0) {
+-            long i = input.skip(readable);
+-            read += i;
+-            return i;
+-        } else {
+-            throw EXCEPTION;
+-        }
+-    }
+-
+-    private int readable(int length) {
+-        return (int) Math.min(length, limit - read);
+-    }
+-
+-    /**
+-     * Exception that will get thrown if the {@link Object} is to big to unmarshall
+-     *
+-     */
+-    static final class TooBigObjectException extends IOException {
+-        private static final long serialVersionUID = 1L;
+-    }
+-}
+diff --git a/src/main/java/org/jboss/netty/handler/codec/marshalling/MarshallerProvider.java b/src/main/java/org/jboss/netty/handler/codec/marshalling/MarshallerProvider.java
+deleted file mode 100644
+index 9d80ed9..0000000
+--- a/src/main/java/org/jboss/netty/handler/codec/marshalling/MarshallerProvider.java
++++ /dev/null
+@@ -1,32 +0,0 @@
+-/*
+- * Copyright 2012 The Netty Project
+- *
+- * The Netty Project licenses this file to you under the Apache License,
+- * version 2.0 (the "License"); you may not use this file except in compliance
+- * with the License. You may obtain a copy of the License at:
+- *
+- *   http://www.apache.org/licenses/LICENSE-2.0
+- *
+- * Unless required by applicable law or agreed to in writing, software
+- * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+- * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+- * License for the specific language governing permissions and limitations
+- * under the License.
+- */
+-package org.jboss.netty.handler.codec.marshalling;
+-
+-import org.jboss.marshalling.Marshaller;
+-import org.jboss.netty.channel.ChannelHandlerContext;
+-
+-/**
+- * This provider is responsible to get a {@link Marshaller} for the given {@link ChannelHandlerContext}.
+- *
+- *
+- */
+-public interface MarshallerProvider {
+-
+-    /**
+-     * Get a {@link Marshaller} for the given {@link ChannelHandlerContext}
+-     */
+-    Marshaller getMarshaller(ChannelHandlerContext ctx) throws Exception;
+-}
+diff --git a/src/main/java/org/jboss/netty/handler/codec/marshalling/MarshallingDecoder.java b/src/main/java/org/jboss/netty/handler/codec/marshalling/MarshallingDecoder.java
+deleted file mode 100644
+index 876daca..0000000
+--- a/src/main/java/org/jboss/netty/handler/codec/marshalling/MarshallingDecoder.java
++++ /dev/null
+@@ -1,90 +0,0 @@
+-/*
+- * Copyright 2012 The Netty Project
+- *
+- * The Netty Project licenses this file to you under the Apache License,
+- * version 2.0 (the "License"); you may not use this file except in compliance
+- * with the License. You may obtain a copy of the License at:
+- *
+- *   http://www.apache.org/licenses/LICENSE-2.0
+- *
+- * Unless required by applicable law or agreed to in writing, software
+- * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+- * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+- * License for the specific language governing permissions and limitations
+- * under the License.
+- */
+-package org.jboss.netty.handler.codec.marshalling;
+-
+-import java.io.StreamCorruptedException;
+-
+-import org.jboss.marshalling.ByteInput;
+-import org.jboss.marshalling.Unmarshaller;
+-import org.jboss.netty.buffer.ChannelBuffer;
+-import org.jboss.netty.channel.Channel;
+-import org.jboss.netty.channel.ChannelHandlerContext;
+-import org.jboss.netty.handler.codec.frame.LengthFieldBasedFrameDecoder;
+-import org.jboss.netty.handler.codec.frame.TooLongFrameException;
+-/**
+- * Decoder which MUST be used with {@link MarshallingEncoder}.
+- *
+- * A {@link LengthFieldBasedFrameDecoder} which use an {@link Unmarshaller} to read the Object out
+- * of the {@link ChannelBuffer}.
+- *
+- */
+-public class MarshallingDecoder extends LengthFieldBasedFrameDecoder {
+-
+-    private final UnmarshallerProvider provider;
+-
+-    /**
+-     * Creates a new decoder whose maximum object size is {@code 1048576}
+-     * bytes.  If the size of the received object is greater than
+-     * {@code 1048576} bytes, a {@link StreamCorruptedException} will be
+-     * raised.
+-     *
+-     */
+-    public MarshallingDecoder(UnmarshallerProvider provider) {
+-        this(provider, 1048576);
+-    }
+-
+-    /**
+-     * Creates a new decoder with the specified maximum object size.
+-     *
+-     * @param maxObjectSize  the maximum byte length of the serialized object.
+-     *                       if the length of the received object is greater
+-     *                       than this value, {@link TooLongFrameException}
+-     *                       will be raised.
+-     */
+-    public MarshallingDecoder(UnmarshallerProvider provider, int maxObjectSize) {
+-        super(maxObjectSize, 0, 4, 0, 4);
+-        this.provider = provider;
+-    }
+-
+-    @Override
+-    protected Object decode(
+-            ChannelHandlerContext ctx, Channel channel, ChannelBuffer buffer) throws Exception {
+-
+-        ChannelBuffer frame = (ChannelBuffer) super.decode(ctx, channel, buffer);
+-        if (frame == null) {
+-            return null;
+-        }
+-
+-        Unmarshaller unmarshaller = provider.getUnmarshaller(ctx);
+-        ByteInput input = new ChannelBufferByteInput(frame);
+-
+-        try {
+-            unmarshaller.start(input);
+-            Object obj = unmarshaller.readObject();
+-            unmarshaller.finish();
+-            return obj;
+-        } finally {
+-            // Call close in a finally block as the ReplayingDecoder will throw an Error if not
+-            // enough bytes are readable. This helps to be sure that we do not leak resource
+-            unmarshaller.close();
+-        }
+-    }
+-
+-    @Override
+-    protected ChannelBuffer extractFrame(ChannelBuffer buffer, int index, int length) {
+-        return buffer.slice(index, length);
+-    }
+-}
+diff --git a/src/main/java/org/jboss/netty/handler/codec/marshalling/MarshallingEncoder.java b/src/main/java/org/jboss/netty/handler/codec/marshalling/MarshallingEncoder.java
+deleted file mode 100644
+index 7ffe0d6..0000000
+--- a/src/main/java/org/jboss/netty/handler/codec/marshalling/MarshallingEncoder.java
++++ /dev/null
+@@ -1,92 +0,0 @@
+-/*
+- * Copyright 2012 The Netty Project
+- *
+- * The Netty Project licenses this file to you under the Apache License,
+- * version 2.0 (the "License"); you may not use this file except in compliance
+- * with the License. You may obtain a copy of the License at:
+- *
+- *   http://www.apache.org/licenses/LICENSE-2.0
+- *
+- * Unless required by applicable law or agreed to in writing, software
+- * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+- * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+- * License for the specific language governing permissions and limitations
+- * under the License.
+- */
+-package org.jboss.netty.handler.codec.marshalling;
+-
+-import org.jboss.marshalling.Marshaller;
+-import org.jboss.netty.buffer.ChannelBuffer;
+-import org.jboss.netty.channel.Channel;
+-import org.jboss.netty.channel.ChannelHandler.Sharable;
+-import org.jboss.netty.channel.ChannelHandlerContext;
+-import org.jboss.netty.handler.codec.oneone.OneToOneEncoder;
+-
+-/**
+- * {@link OneToOneEncoder} implementation which uses JBoss Marshalling to marshal
+- * an Object. Be aware that this {@link OneToOneEncoder} is not compatible with
+- * an other client that just use JBoss Marshalling as it includes the size of every
+- * {@link Object} that gets serialized in front of the {@link Object} itself.
+- *
+- * Use this with {@link MarshallingDecoder}
+- *
+- * See <a href="http://www.jboss.org/jbossmarshalling">JBoss Marshalling website</a>
+- * for more informations
+- *
+- */
+-@Sharable
+-public class MarshallingEncoder extends OneToOneEncoder {
+-    private static final byte[] LENGTH_PLACEHOLDER = new byte[4];
+-    private final MarshallerProvider provider;
+-
+-    private final int estimatedLength;
+-
+-    /**
+-     * Creates a new encoder with the estimated length of 512 bytes.
+-     *
+-     * @param provider the {@link MarshallerProvider} to use
+-     */
+-    public MarshallingEncoder(MarshallerProvider provider) {
+-        this(provider, 512);
+-    }
+-
+-    /**
+-     * Creates a new encoder.
+-     *
+-     * @param provider
+-     *        the {@link MarshallerProvider} to use
+-     * @param estimatedLength
+-     *        the estimated byte length of the serialized form of an object.
+-     *        If the length of the serialized form exceeds this value, the
+-     *        internal buffer will be expanded automatically at the cost of
+-     *        memory bandwidth.  If this value is too big, it will also waste
+-     *        memory bandwidth.  To avoid unnecessary memory copy or allocation
+-     *        cost, please specify the properly estimated value.
+-     */
+-    public MarshallingEncoder(MarshallerProvider provider, int estimatedLength) {
+-        if (estimatedLength < 0) {
+-            throw new IllegalArgumentException(
+-                    "estimatedLength: " + estimatedLength);
+-        }
+-        this.estimatedLength = estimatedLength;
+-        this.provider = provider;
+-    }
+-
+-    @Override
+-    protected Object encode(ChannelHandlerContext ctx, Channel channel, Object msg) throws Exception {
+-        Marshaller marshaller = provider.getMarshaller(ctx);
+-        ChannelBufferByteOutput output = new ChannelBufferByteOutput(
+-                ctx.getChannel().getConfig().getBufferFactory(), estimatedLength);
+-        output.getBuffer().writeBytes(LENGTH_PLACEHOLDER);
+-        marshaller.start(output);
+-        marshaller.writeObject(msg);
+-        marshaller.finish();
+-        marshaller.close();
+-
+-        ChannelBuffer encoded = output.getBuffer();
+-        encoded.setInt(0, encoded.writerIndex() - 4);
+-
+-        return encoded;
+-    }
+-
+-}
+diff --git a/src/main/java/org/jboss/netty/handler/codec/marshalling/ThreadLocalMarshallerProvider.java b/src/main/java/org/jboss/netty/handler/codec/marshalling/ThreadLocalMarshallerProvider.java
+deleted file mode 100644
+index 8159f18..0000000
+--- a/src/main/java/org/jboss/netty/handler/codec/marshalling/ThreadLocalMarshallerProvider.java
++++ /dev/null
+@@ -1,57 +0,0 @@
+-/*
+- * Copyright 2012 The Netty Project
+- *
+- * The Netty Project licenses this file to you under the Apache License,
+- * version 2.0 (the "License"); you may not use this file except in compliance
+- * with the License. You may obtain a copy of the License at:
+- *
+- *   http://www.apache.org/licenses/LICENSE-2.0
+- *
+- * Unless required by applicable law or agreed to in writing, software
+- * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+- * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+- * License for the specific language governing permissions and limitations
+- * under the License.
+- */
+-package org.jboss.netty.handler.codec.marshalling;
+-
+-import org.jboss.marshalling.Marshaller;
+-import org.jboss.marshalling.MarshallerFactory;
+-import org.jboss.marshalling.MarshallingConfiguration;
+-import org.jboss.netty.channel.ChannelHandlerContext;
+-
+-/**
+- * {@link UnmarshallerProvider} implementation which use a {@link ThreadLocal} to store references
+- * to {@link Marshaller} instances. This may give you some performance boost if you need to marshall
+- * many small {@link Object}'s and your actual Thread count is not to big
+- *
+- *
+- *
+- *
+- */
+-public class ThreadLocalMarshallerProvider implements MarshallerProvider {
+-    private final ThreadLocal<Marshaller> marshallers = new ThreadLocal<Marshaller>();
+-
+-    private final MarshallerFactory factory;
+-    private final MarshallingConfiguration config;
+-
+-    /**
+-     * Create a new instance of the {@link ThreadLocalMarshallerProvider}
+-     *
+-     * @param factory   the {@link MarshallerFactory} to use to create {@link Marshaller}'s if needed
+-     * @param config    the {@link MarshallingConfiguration} to use
+-     */
+-    public ThreadLocalMarshallerProvider(MarshallerFactory factory, MarshallingConfiguration config) {
+-        this.factory = factory;
+-        this.config = config;
+-    }
+-
+-    public Marshaller getMarshaller(ChannelHandlerContext ctx) throws Exception {
+-        Marshaller marshaller = marshallers.get();
+-        if (marshaller == null) {
+-            marshaller = factory.createMarshaller(config);
+-            marshallers.set(marshaller);
+-        }
+-        return marshaller;
+-    }
+-}
+diff --git a/src/main/java/org/jboss/netty/handler/codec/marshalling/ThreadLocalUnmarshallerProvider.java b/src/main/java/org/jboss/netty/handler/codec/marshalling/ThreadLocalUnmarshallerProvider.java
+deleted file mode 100644
+index 1886dbc..0000000
+--- a/src/main/java/org/jboss/netty/handler/codec/marshalling/ThreadLocalUnmarshallerProvider.java
++++ /dev/null
+@@ -1,56 +0,0 @@
+-/*
+- * Copyright 2012 The Netty Project
+- *
+- * The Netty Project licenses this file to you under the Apache License,
+- * version 2.0 (the "License"); you may not use this file except in compliance
+- * with the License. You may obtain a copy of the License at:
+- *
+- *   http://www.apache.org/licenses/LICENSE-2.0
+- *
+- * Unless required by applicable law or agreed to in writing, software
+- * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+- * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+- * License for the specific language governing permissions and limitations
+- * under the License.
+- */
+-package org.jboss.netty.handler.codec.marshalling;
+-
+-import org.jboss.marshalling.MarshallerFactory;
+-import org.jboss.marshalling.MarshallingConfiguration;
+-import org.jboss.marshalling.Unmarshaller;
+-import org.jboss.netty.channel.ChannelHandlerContext;
+-
+-/**
+- * {@link UnmarshallerProvider} implementation which use a {@link ThreadLocal} to store references
+- * to {@link Unmarshaller} instances. This may give you some performance boost if you need to unmarshall
+- * many small {@link Object}'s.
+- *
+- *
+- */
+-public class ThreadLocalUnmarshallerProvider implements UnmarshallerProvider {
+-    private final ThreadLocal<Unmarshaller> unmarshallers = new ThreadLocal<Unmarshaller>();
+-
+-    private final MarshallerFactory factory;
+-    private final MarshallingConfiguration config;
+-
+-    /**
+-     * Create a new instance of the {@link ThreadLocalUnmarshallerProvider}
+-     *
+-     * @param factory   the {@link MarshallerFactory} to use to create {@link Unmarshaller}'s if needed
+-     * @param config    the {@link MarshallingConfiguration} to use
+-     */
+-    public ThreadLocalUnmarshallerProvider(MarshallerFactory factory, MarshallingConfiguration config) {
+-        this.factory = factory;
+-        this.config = config;
+-    }
+-
+-    public Unmarshaller getUnmarshaller(ChannelHandlerContext ctx) throws Exception {
+-        Unmarshaller unmarshaller = unmarshallers.get();
+-        if (unmarshaller == null) {
+-            unmarshaller = factory.createUnmarshaller(config);
+-            unmarshallers.set(unmarshaller);
+-        }
+-        return unmarshaller;
+-    }
+-
+-}
+diff --git a/src/main/java/org/jboss/netty/handler/codec/marshalling/UnmarshallerProvider.java b/src/main/java/org/jboss/netty/handler/codec/marshalling/UnmarshallerProvider.java
+deleted file mode 100644
+index 2f92997..0000000
+--- a/src/main/java/org/jboss/netty/handler/codec/marshalling/UnmarshallerProvider.java
++++ /dev/null
+@@ -1,31 +0,0 @@
+-/*
+- * Copyright 2012 The Netty Project
+- *
+- * The Netty Project licenses this file to you under the Apache License,
+- * version 2.0 (the "License"); you may not use this file except in compliance
+- * with the License. You may obtain a copy of the License at:
+- *
+- *   http://www.apache.org/licenses/LICENSE-2.0
+- *
+- * Unless required by applicable law or agreed to in writing, software
+- * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+- * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+- * License for the specific language governing permissions and limitations
+- * under the License.
+- */
+-package org.jboss.netty.handler.codec.marshalling;
+-
+-import org.jboss.marshalling.Unmarshaller;
+-import org.jboss.netty.channel.ChannelHandlerContext;
+-
+-/**
+- * This provider is responsible to get an {@link Unmarshaller} for a {@link ChannelHandlerContext}
+- *
+- */
+-public interface UnmarshallerProvider {
+-
+-    /**
+-     * Get the {@link Unmarshaller} for the given {@link ChannelHandlerContext}
+-     */
+-    Unmarshaller getUnmarshaller(ChannelHandlerContext ctx) throws Exception;
+-}
+diff --git a/src/main/java/org/jboss/netty/handler/codec/marshalling/package-info.java b/src/main/java/org/jboss/netty/handler/codec/marshalling/package-info.java
+deleted file mode 100644
+index 86abb88..0000000
+--- a/src/main/java/org/jboss/netty/handler/codec/marshalling/package-info.java
++++ /dev/null
+@@ -1,21 +0,0 @@
+-/*
+- * Copyright 2012 The Netty Project
+- *
+- * The Netty Project licenses this file to you under the Apache License,
+- * version 2.0 (the "License"); you may not use this file except in compliance
+- * with the License. You may obtain a copy of the License at:
+- *
+- *   http://www.apache.org/licenses/LICENSE-2.0
+- *
+- * Unless required by applicable law or agreed to in writing, software
+- * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+- * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+- * License for the specific language governing permissions and limitations
+- * under the License.
+- */
+-
+-/**
+- * Decoder and Encoder which uses <a href="http://www.jboss.org/jbossmarshalling">JBoss Marshalling</a>.
+- *
+- */
+-package org.jboss.netty.handler.codec.marshalling;
+diff --git a/src/main/java/org/jboss/netty/logging/JBossLogger.java b/src/main/java/org/jboss/netty/logging/JBossLogger.java
+deleted file mode 100644
+index a542012..0000000
+--- a/src/main/java/org/jboss/netty/logging/JBossLogger.java
++++ /dev/null
+@@ -1,86 +0,0 @@
+-/*
+- * Copyright 2012 The Netty Project
+- *
+- * The Netty Project licenses this file to you under the Apache License,
+- * version 2.0 (the "License"); you may not use this file except in compliance
+- * with the License. You may obtain a copy of the License at:
+- *
+- *   http://www.apache.org/licenses/LICENSE-2.0
+- *
+- * Unless required by applicable law or agreed to in writing, software
+- * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+- * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+- * License for the specific language governing permissions and limitations
+- * under the License.
+- */
+-package org.jboss.netty.logging;
+-
+-import org.jboss.logging.Logger;
+-
+-/**
+- * <a href="http://anonsvn.jboss.org/repos/common/common-logging-spi/">JBoss Logging</a>
+- * logger.
+- */
+-class JBossLogger extends AbstractInternalLogger {
+-
+-    private final Logger logger;
+-
+-    JBossLogger(Logger logger) {
+-        this.logger = logger;
+-    }
+-
+-    public void debug(String msg) {
+-        logger.debug(msg);
+-    }
+-
+-    public void debug(String msg, Throwable cause) {
+-        logger.debug(msg, cause);
+-    }
+-
+-    public void error(String msg) {
+-        logger.error(msg);
+-    }
+-
+-    public void error(String msg, Throwable cause) {
+-        logger.error(msg, cause);
+-    }
+-
+-    public void info(String msg) {
+-        logger.info(msg);
+-    }
+-
+-    public void info(String msg, Throwable cause) {
+-        logger.info(msg, cause);
+-    }
+-
+-    @SuppressWarnings("deprecation")
+-    public boolean isDebugEnabled() {
+-        return logger.isDebugEnabled();
+-    }
+-
+-    public boolean isErrorEnabled() {
+-        return true;
+-    }
+-
+-    @SuppressWarnings("deprecation")
+-    public boolean isInfoEnabled() {
+-        return logger.isInfoEnabled();
+-    }
+-
+-    public boolean isWarnEnabled() {
+-        return true;
+-    }
+-
+-    public void warn(String msg) {
+-        logger.warn(msg);
+-    }
+-
+-    public void warn(String msg, Throwable cause) {
+-        logger.warn(msg, cause);
+-    }
+-
+-    @Override
+-    public String toString() {
+-        return String.valueOf(logger.getName());
+-    }
+-}
+diff --git a/src/main/java/org/jboss/netty/logging/JBossLoggerFactory.java b/src/main/java/org/jboss/netty/logging/JBossLoggerFactory.java
+deleted file mode 100644
+index 6ae2b23..0000000
+--- a/src/main/java/org/jboss/netty/logging/JBossLoggerFactory.java
++++ /dev/null
+@@ -1,34 +0,0 @@
+-/*
+- * Copyright 2012 The Netty Project
+- *
+- * The Netty Project licenses this file to you under the Apache License,
+- * version 2.0 (the "License"); you may not use this file except in compliance
+- * with the License. You may obtain a copy of the License at:
+- *
+- *   http://www.apache.org/licenses/LICENSE-2.0
+- *
+- * Unless required by applicable law or agreed to in writing, software
+- * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+- * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+- * License for the specific language governing permissions and limitations
+- * under the License.
+- */
+-package org.jboss.netty.logging;
+-
+-
+-import org.jboss.logging.Logger;
+-
+-/**
+- * Logger factory which creates a
+- * <a href="http://anonsvn.jboss.org/repos/common/common-logging-spi/">JBoss Logging</a>
+- * logger.
+- */
+-public class JBossLoggerFactory extends InternalLoggerFactory {
+-
+-    @Override
+-    public InternalLogger newInstance(String name) {
+-        final Logger logger =
+-            Logger.getLogger(name);
+-        return new JBossLogger(logger);
+-    }
+-}
+diff --git a/src/test/java/org/jboss/netty/handler/codec/marshalling/AbstractCompatibleMarshallingDecoderTest.java b/src/test/java/org/jboss/netty/handler/codec/marshalling/AbstractCompatibleMarshallingDecoderTest.java
+deleted file mode 100644
+index fea2c91..0000000
+--- a/src/test/java/org/jboss/netty/handler/codec/marshalling/AbstractCompatibleMarshallingDecoderTest.java
++++ /dev/null
+@@ -1,140 +0,0 @@
+-/*
+- * Copyright 2012 The Netty Project
+- *
+- * The Netty Project licenses this file to you under the Apache License,
+- * version 2.0 (the "License"); you may not use this file except in compliance
+- * with the License. You may obtain a copy of the License at:
+- *
+- *   http://www.apache.org/licenses/LICENSE-2.0
+- *
+- * Unless required by applicable law or agreed to in writing, software
+- * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+- * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+- * License for the specific language governing permissions and limitations
+- * under the License.
+- */
+-package org.jboss.netty.handler.codec.marshalling;
+-
+-import org.jboss.marshalling.Marshaller;
+-import org.jboss.marshalling.MarshallerFactory;
+-import org.jboss.marshalling.Marshalling;
+-import org.jboss.marshalling.MarshallingConfiguration;
+-import org.jboss.netty.buffer.ChannelBuffer;
+-import org.jboss.netty.buffer.ChannelBuffers;
+-import org.jboss.netty.channel.ChannelUpstreamHandler;
+-import org.jboss.netty.handler.codec.embedder.CodecEmbedderException;
+-import org.jboss.netty.handler.codec.embedder.DecoderEmbedder;
+-import org.jboss.netty.handler.codec.frame.TooLongFrameException;
+-import org.junit.Test;
+-
+-import java.io.ByteArrayOutputStream;
+-import java.io.IOException;
+-
+-import static org.junit.Assert.*;
+-
+-public abstract class AbstractCompatibleMarshallingDecoderTest {
+-    @SuppressWarnings("RedundantStringConstructorCall")
+-    private final String testObject = new String("test");
+-
+-    @Test
+-    public void testSimpleUnmarshalling() throws IOException {
+-        MarshallerFactory marshallerFactory = createMarshallerFactory();
+-        MarshallingConfiguration configuration = createMarshallingConfig();
+-
+-        DecoderEmbedder<Object> decoder = new DecoderEmbedder<Object>(createDecoder(Integer.MAX_VALUE));
+-
+-        ByteArrayOutputStream bout = new ByteArrayOutputStream();
+-        Marshaller marshaller = marshallerFactory.createMarshaller(configuration);
+-        marshaller.start(Marshalling.createByteOutput(bout));
+-        marshaller.writeObject(testObject);
+-        marshaller.finish();
+-        marshaller.close();
+-
+-        byte[] testBytes = bout.toByteArray();
+-
+-        decoder.offer(input(testBytes));
+-        assertTrue(decoder.finish());
+-
+-        String unmarshalled = (String) decoder.poll();
+-
+-        assertEquals(testObject, unmarshalled);
+-
+-        assertNull(decoder.poll());
+-    }
+-
+-    protected ChannelBuffer input(byte[] input) {
+-        return ChannelBuffers.wrappedBuffer(input);
+-    }
+-
+-    @Test
+-    public void testFragmentedUnmarshalling() throws IOException {
+-        MarshallerFactory marshallerFactory = createMarshallerFactory();
+-        MarshallingConfiguration configuration = createMarshallingConfig();
+-
+-        DecoderEmbedder<Object> decoder = new DecoderEmbedder<Object>(createDecoder(Integer.MAX_VALUE));
+-
+-        ByteArrayOutputStream bout = new ByteArrayOutputStream();
+-        Marshaller marshaller = marshallerFactory.createMarshaller(configuration);
+-        marshaller.start(Marshalling.createByteOutput(bout));
+-        marshaller.writeObject(testObject);
+-        marshaller.finish();
+-        marshaller.close();
+-
+-        byte[] testBytes = bout.toByteArray();
+-
+-        ChannelBuffer buffer = input(testBytes);
+-        ChannelBuffer slice = buffer.readSlice(2);
+-
+-        decoder.offer(slice);
+-        decoder.offer(buffer);
+-        assertTrue(decoder.finish());
+-
+-
+-        String unmarshalled = (String) decoder.poll();
+-
+-        assertEquals(testObject, unmarshalled);
+-
+-        assertNull(decoder.poll());
+-    }
+-
+-    @Test
+-    public void testTooBigObject() throws IOException {
+-        MarshallerFactory marshallerFactory = createMarshallerFactory();
+-        MarshallingConfiguration configuration = createMarshallingConfig();
+-
+-        ChannelUpstreamHandler mDecoder = createDecoder(4);
+-        DecoderEmbedder<Object> decoder = new DecoderEmbedder<Object>(mDecoder);
+-
+-        ByteArrayOutputStream bout = new ByteArrayOutputStream();
+-        Marshaller marshaller = marshallerFactory.createMarshaller(configuration);
+-        marshaller.start(Marshalling.createByteOutput(bout));
+-        marshaller.writeObject(testObject);
+-        marshaller.finish();
+-        marshaller.close();
+-
+-        byte[] testBytes = bout.toByteArray();
+-
+-        try {
+-            decoder.offer(input(testBytes));
+-            fail();
+-        } catch (CodecEmbedderException e) {
+-            assertEquals(TooLongFrameException.class, e.getCause().getClass());
+-
+-
+-        }
+-
+-    }
+-
+-    protected ChannelUpstreamHandler createDecoder(int maxObjectSize) {
+-        return new CompatibleMarshallingDecoder(createProvider(createMarshallerFactory(), createMarshallingConfig()), maxObjectSize);
+-    }
+-
+-    protected UnmarshallerProvider createProvider(MarshallerFactory factory, MarshallingConfiguration config) {
+-        return new DefaultUnmarshallerProvider(factory, config);
+-
+-    }
+-
+-    protected abstract MarshallerFactory createMarshallerFactory();
+-    protected abstract MarshallingConfiguration createMarshallingConfig();
+-
+-}
+diff --git a/src/test/java/org/jboss/netty/handler/codec/marshalling/AbstractCompatibleMarshallingEncoderTest.java b/src/test/java/org/jboss/netty/handler/codec/marshalling/AbstractCompatibleMarshallingEncoderTest.java
+deleted file mode 100644
+index 88fd585..0000000
+--- a/src/test/java/org/jboss/netty/handler/codec/marshalling/AbstractCompatibleMarshallingEncoderTest.java
++++ /dev/null
+@@ -1,76 +0,0 @@
+-/*
+- * Copyright 2012 The Netty Project
+- *
+- * The Netty Project licenses this file to you under the Apache License,
+- * version 2.0 (the "License"); you may not use this file except in compliance
+- * with the License. You may obtain a copy of the License at:
+- *
+- *   http://www.apache.org/licenses/LICENSE-2.0
+- *
+- * Unless required by applicable law or agreed to in writing, software
+- * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+- * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+- * License for the specific language governing permissions and limitations
+- * under the License.
+- */
+-package org.jboss.netty.handler.codec.marshalling;
+-
+-import org.jboss.marshalling.MarshallerFactory;
+-import org.jboss.marshalling.Marshalling;
+-import org.jboss.marshalling.MarshallingConfiguration;
+-import org.jboss.marshalling.Unmarshaller;
+-import org.jboss.netty.buffer.ChannelBuffer;
+-import org.jboss.netty.channel.ChannelDownstreamHandler;
+-import org.jboss.netty.handler.codec.embedder.EncoderEmbedder;
+-import org.junit.Test;
+-
+-import java.io.IOException;
+-
+-import static org.junit.Assert.*;
+-
+-public abstract class AbstractCompatibleMarshallingEncoderTest {
+-
+-    @Test
+-    public void testMarshalling() throws IOException, ClassNotFoundException {
+-        @SuppressWarnings("RedundantStringConstructorCall")
+-        String testObject = new String("test");
+-
+-        final MarshallerFactory marshallerFactory = createMarshallerFactory();
+-        final MarshallingConfiguration configuration = createMarshallingConfig();
+-
+-        EncoderEmbedder<ChannelBuffer> encoder = new EncoderEmbedder<ChannelBuffer>(createEncoder());
+-
+-        encoder.offer(testObject);
+-        assertTrue(encoder.finish());
+-
+-        ChannelBuffer buffer = encoder.poll();
+-
+-        Unmarshaller unmarshaller = marshallerFactory.createUnmarshaller(configuration);
+-        unmarshaller.start(Marshalling.createByteInput(truncate(buffer).toByteBuffer()));
+-        String read = (String) unmarshaller.readObject();
+-        assertEquals(testObject, read);
+-
+-        assertEquals(-1, unmarshaller.read());
+-
+-        assertNull(encoder.poll());
+-
+-        unmarshaller.finish();
+-        unmarshaller.close();
+-    }
+-    protected ChannelBuffer truncate(ChannelBuffer buf) {
+-        return buf;
+-    }
+-
+-    protected ChannelDownstreamHandler createEncoder() {
+-        return new CompatibleMarshallingEncoder(createProvider());
+-    }
+-
+-    protected MarshallerProvider createProvider() {
+-        return new DefaultMarshallerProvider(createMarshallerFactory(), createMarshallingConfig());
+-    }
+-
+-    protected abstract MarshallerFactory createMarshallerFactory();
+-
+-    protected abstract MarshallingConfiguration createMarshallingConfig();
+-
+-}
+diff --git a/src/test/java/org/jboss/netty/handler/codec/marshalling/RiverCompatibleMarshallingDecoderTest.java b/src/test/java/org/jboss/netty/handler/codec/marshalling/RiverCompatibleMarshallingDecoderTest.java
+deleted file mode 100644
+index add0b4e..0000000
+--- a/src/test/java/org/jboss/netty/handler/codec/marshalling/RiverCompatibleMarshallingDecoderTest.java
++++ /dev/null
+@@ -1,37 +0,0 @@
+-/*
+- * Copyright 2012 The Netty Project
+- *
+- * The Netty Project licenses this file to you under the Apache License,
+- * version 2.0 (the "License"); you may not use this file except in compliance
+- * with the License. You may obtain a copy of the License at:
+- *
+- *   http://www.apache.org/licenses/LICENSE-2.0
+- *
+- * Unless required by applicable law or agreed to in writing, software
+- * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+- * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+- * License for the specific language governing permissions and limitations
+- * under the License.
+- */
+-package org.jboss.netty.handler.codec.marshalling;
+-
+-import org.jboss.marshalling.MarshallerFactory;
+-import org.jboss.marshalling.Marshalling;
+-import org.jboss.marshalling.MarshallingConfiguration;
+-
+-public class RiverCompatibleMarshallingDecoderTest extends AbstractCompatibleMarshallingDecoderTest {
+-
+-    @Override
+-    protected MarshallerFactory createMarshallerFactory() {
+-        return Marshalling.getProvidedMarshallerFactory("river");
+-    }
+-
+-    @Override
+-    protected MarshallingConfiguration createMarshallingConfig() {
+-        // Create a configuration
+-        final MarshallingConfiguration configuration = new MarshallingConfiguration();
+-        configuration.setVersion(3);
+-        return configuration;
+-    }
+-
+-}
+diff --git a/src/test/java/org/jboss/netty/handler/codec/marshalling/RiverCompatibleMarshallingEncoderTest.java b/src/test/java/org/jboss/netty/handler/codec/marshalling/RiverCompatibleMarshallingEncoderTest.java
+deleted file mode 100644
+index f2c3bea..0000000
+--- a/src/test/java/org/jboss/netty/handler/codec/marshalling/RiverCompatibleMarshallingEncoderTest.java
++++ /dev/null
+@@ -1,38 +0,0 @@
+-/*
+- * Copyright 2012 The Netty Project
+- *
+- * The Netty Project licenses this file to you under the Apache License,
+- * version 2.0 (the "License"); you may not use this file except in compliance
+- * with the License. You may obtain a copy of the License at:
+- *
+- *   http://www.apache.org/licenses/LICENSE-2.0
+- *
+- * Unless required by applicable law or agreed to in writing, software
+- * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+- * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+- * License for the specific language governing permissions and limitations
+- * under the License.
+- */
+-package org.jboss.netty.handler.codec.marshalling;
+-
+-import org.jboss.marshalling.MarshallerFactory;
+-import org.jboss.marshalling.Marshalling;
+-import org.jboss.marshalling.MarshallingConfiguration;
+-
+-public class RiverCompatibleMarshallingEncoderTest extends AbstractCompatibleMarshallingEncoderTest {
+-
+-
+-    @Override
+-    protected MarshallerFactory createMarshallerFactory() {
+-        return Marshalling.getProvidedMarshallerFactory("river");
+-    }
+-
+-    @Override
+-    protected MarshallingConfiguration createMarshallingConfig() {
+-        // Create a configuration
+-        final MarshallingConfiguration configuration = new MarshallingConfiguration();
+-        configuration.setVersion(3);
+-        return configuration;
+-    }
+-
+-}
+diff --git a/src/test/java/org/jboss/netty/handler/codec/marshalling/RiverContextBoundCompatibleMarshallingDecoderTest.java b/src/test/java/org/jboss/netty/handler/codec/marshalling/RiverContextBoundCompatibleMarshallingDecoderTest.java
+deleted file mode 100644
+index f211834..0000000
+--- a/src/test/java/org/jboss/netty/handler/codec/marshalling/RiverContextBoundCompatibleMarshallingDecoderTest.java
++++ /dev/null
+@@ -1,29 +0,0 @@
+-/*
+- * Copyright 2012 The Netty Project
+- *
+- * The Netty Project licenses this file to you under the Apache License,
+- * version 2.0 (the "License"); you may not use this file except in compliance
+- * with the License. You may obtain a copy of the License at:
+- *
+- *   http://www.apache.org/licenses/LICENSE-2.0
+- *
+- * Unless required by applicable law or agreed to in writing, software
+- * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+- * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+- * License for the specific language governing permissions and limitations
+- * under the License.
+- */
+-package org.jboss.netty.handler.codec.marshalling;
+-
+-import org.jboss.marshalling.MarshallerFactory;
+-import org.jboss.marshalling.MarshallingConfiguration;
+-
+-public class RiverContextBoundCompatibleMarshallingDecoderTest extends RiverCompatibleMarshallingDecoderTest {
+-
+-    @Override
+-    protected UnmarshallerProvider createProvider(MarshallerFactory factory, MarshallingConfiguration config) {
+-        return new ContextBoundUnmarshallerProvider(factory, config);
+-    }
+-
+-
+-}
+diff --git a/src/test/java/org/jboss/netty/handler/codec/marshalling/RiverContextBoundMarshallingDecoderTest.java b/src/test/java/org/jboss/netty/handler/codec/marshalling/RiverContextBoundMarshallingDecoderTest.java
+deleted file mode 100644
+index 5a3c645..0000000
+--- a/src/test/java/org/jboss/netty/handler/codec/marshalling/RiverContextBoundMarshallingDecoderTest.java
++++ /dev/null
+@@ -1,29 +0,0 @@
+-/*
+- * Copyright 2012 The Netty Project
+- *
+- * The Netty Project licenses this file to you under the Apache License,
+- * version 2.0 (the "License"); you may not use this file except in compliance
+- * with the License. You may obtain a copy of the License at:
+- *
+- *   http://www.apache.org/licenses/LICENSE-2.0
+- *
+- * Unless required by applicable law or agreed to in writing, software
+- * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+- * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+- * License for the specific language governing permissions and limitations
+- * under the License.
+- */
+-package org.jboss.netty.handler.codec.marshalling;
+-
+-import org.jboss.marshalling.MarshallerFactory;
+-import org.jboss.marshalling.MarshallingConfiguration;
+-
+-public class RiverContextBoundMarshallingDecoderTest extends RiverMarshallingDecoderTest {
+-
+-    @Override
+-    protected UnmarshallerProvider createProvider(MarshallerFactory factory, MarshallingConfiguration config) {
+-        return new ContextBoundUnmarshallerProvider(factory, config);
+-    }
+-
+-
+-}
+diff --git a/src/test/java/org/jboss/netty/handler/codec/marshalling/RiverMarshallingDecoderTest.java b/src/test/java/org/jboss/netty/handler/codec/marshalling/RiverMarshallingDecoderTest.java
+deleted file mode 100644
+index 428f895..0000000
+--- a/src/test/java/org/jboss/netty/handler/codec/marshalling/RiverMarshallingDecoderTest.java
++++ /dev/null
+@@ -1,37 +0,0 @@
+-/*
+- * Copyright 2012 The Netty Project
+- *
+- * The Netty Project licenses this file to you under the Apache License,
+- * version 2.0 (the "License"); you may not use this file except in compliance
+- * with the License. You may obtain a copy of the License at:
+- *
+- *   http://www.apache.org/licenses/LICENSE-2.0
+- *
+- * Unless required by applicable law or agreed to in writing, software
+- * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+- * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+- * License for the specific language governing permissions and limitations
+- * under the License.
+- */
+-package org.jboss.netty.handler.codec.marshalling;
+-
+-import org.jboss.netty.buffer.ChannelBuffer;
+-import org.jboss.netty.buffer.ChannelBuffers;
+-import org.jboss.netty.channel.ChannelUpstreamHandler;
+-
+-public class RiverMarshallingDecoderTest extends RiverCompatibleMarshallingDecoderTest {
+-
+-    @Override
+-    protected ChannelBuffer input(byte[] input) {
+-        ChannelBuffer length = ChannelBuffers.buffer(4);
+-        length.writeInt(input.length);
+-        return ChannelBuffers.wrappedBuffer(length, ChannelBuffers.wrappedBuffer(input));
+-    }
+-
+-    @Override
+-    protected ChannelUpstreamHandler createDecoder(int maxObjectSize) {
+-        return new MarshallingDecoder(createProvider(createMarshallerFactory(), createMarshallingConfig()), maxObjectSize);
+-    }
+-
+-
+-}
+diff --git a/src/test/java/org/jboss/netty/handler/codec/marshalling/RiverMarshallingEncoderTest.java b/src/test/java/org/jboss/netty/handler/codec/marshalling/RiverMarshallingEncoderTest.java
+deleted file mode 100644
+index d5775a0..0000000
+--- a/src/test/java/org/jboss/netty/handler/codec/marshalling/RiverMarshallingEncoderTest.java
++++ /dev/null
+@@ -1,34 +0,0 @@
+-/*
+- * Copyright 2012 The Netty Project
+- *
+- * The Netty Project licenses this file to you under the Apache License,
+- * version 2.0 (the "License"); you may not use this file except in compliance
+- * with the License. You may obtain a copy of the License at:
+- *
+- *   http://www.apache.org/licenses/LICENSE-2.0
+- *
+- * Unless required by applicable law or agreed to in writing, software
+- * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+- * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+- * License for the specific language governing permissions and limitations
+- * under the License.
+- */
+-package org.jboss.netty.handler.codec.marshalling;
+-
+-import org.jboss.netty.buffer.ChannelBuffer;
+-import org.jboss.netty.channel.ChannelDownstreamHandler;
+-
+-public class RiverMarshallingEncoderTest extends RiverCompatibleMarshallingEncoderTest {
+-
+-    @Override
+-    protected ChannelBuffer truncate(ChannelBuffer buf) {
+-        buf.readInt();
+-        return buf;
+-    }
+-
+-    @Override
+-    protected ChannelDownstreamHandler createEncoder() {
+-        return new MarshallingEncoder(createProvider());
+-    }
+-
+-}
+diff --git a/src/test/java/org/jboss/netty/handler/codec/marshalling/RiverThreadLocalCompatibleMarshallingDecoderTest.java b/src/test/java/org/jboss/netty/handler/codec/marshalling/RiverThreadLocalCompatibleMarshallingDecoderTest.java
+deleted file mode 100644
+index a8bb074..0000000
+--- a/src/test/java/org/jboss/netty/handler/codec/marshalling/RiverThreadLocalCompatibleMarshallingDecoderTest.java
++++ /dev/null
+@@ -1,29 +0,0 @@
+-/*
+- * Copyright 2012 The Netty Project
+- *
+- * The Netty Project licenses this file to you under the Apache License,
+- * version 2.0 (the "License"); you may not use this file except in compliance
+- * with the License. You may obtain a copy of the License at:
+- *
+- *   http://www.apache.org/licenses/LICENSE-2.0
+- *
+- * Unless required by applicable law or agreed to in writing, software
+- * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+- * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+- * License for the specific language governing permissions and limitations
+- * under the License.
+- */
+-package org.jboss.netty.handler.codec.marshalling;
+-
+-import org.jboss.marshalling.MarshallerFactory;
+-import org.jboss.marshalling.MarshallingConfiguration;
+-
+-public class RiverThreadLocalCompatibleMarshallingDecoderTest extends RiverCompatibleMarshallingDecoderTest {
+-
+-    @Override
+-    protected UnmarshallerProvider createProvider(MarshallerFactory factory, MarshallingConfiguration config) {
+-        return new ThreadLocalUnmarshallerProvider(factory, config);
+-    }
+-
+-
+-}
+diff --git a/src/test/java/org/jboss/netty/handler/codec/marshalling/RiverThreadLocalCompatibleMarshallingEncoderTest.java b/src/test/java/org/jboss/netty/handler/codec/marshalling/RiverThreadLocalCompatibleMarshallingEncoderTest.java
+deleted file mode 100644
+index c57b26a..0000000
+--- a/src/test/java/org/jboss/netty/handler/codec/marshalling/RiverThreadLocalCompatibleMarshallingEncoderTest.java
++++ /dev/null
+@@ -1,25 +0,0 @@
+-/*
+- * Copyright 2012 The Netty Project
+- *
+- * The Netty Project licenses this file to you under the Apache License,
+- * version 2.0 (the "License"); you may not use this file except in compliance
+- * with the License. You may obtain a copy of the License at:
+- *
+- *   http://www.apache.org/licenses/LICENSE-2.0
+- *
+- * Unless required by applicable law or agreed to in writing, software
+- * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+- * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+- * License for the specific language governing permissions and limitations
+- * under the License.
+- */
+-package org.jboss.netty.handler.codec.marshalling;
+-
+-public class RiverThreadLocalCompatibleMarshallingEncoderTest extends RiverCompatibleMarshallingEncoderTest {
+-
+-    @Override
+-    protected MarshallerProvider createProvider() {
+-        return new ThreadLocalMarshallerProvider(createMarshallerFactory(), createMarshallingConfig());
+-    }
+-
+-}
+diff --git a/src/test/java/org/jboss/netty/handler/codec/marshalling/RiverThreadLocalMarshallingDecoderTest.java b/src/test/java/org/jboss/netty/handler/codec/marshalling/RiverThreadLocalMarshallingDecoderTest.java
+deleted file mode 100644
+index 77621c9..0000000
+--- a/src/test/java/org/jboss/netty/handler/codec/marshalling/RiverThreadLocalMarshallingDecoderTest.java
++++ /dev/null
+@@ -1,29 +0,0 @@
+-/*
+- * Copyright 2012 The Netty Project
+- *
+- * The Netty Project licenses this file to you under the Apache License,
+- * version 2.0 (the "License"); you may not use this file except in compliance
+- * with the License. You may obtain a copy of the License at:
+- *
+- *   http://www.apache.org/licenses/LICENSE-2.0
+- *
+- * Unless required by applicable law or agreed to in writing, software
+- * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+- * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+- * License for the specific language governing permissions and limitations
+- * under the License.
+- */
+-package org.jboss.netty.handler.codec.marshalling;
+-
+-import org.jboss.marshalling.MarshallerFactory;
+-import org.jboss.marshalling.MarshallingConfiguration;
+-
+-public class RiverThreadLocalMarshallingDecoderTest extends RiverMarshallingDecoderTest {
+-
+-    @Override
+-    protected UnmarshallerProvider createProvider(MarshallerFactory factory, MarshallingConfiguration config) {
+-        return new ThreadLocalUnmarshallerProvider(factory, config);
+-    }
+-
+-
+-}
+diff --git a/src/test/java/org/jboss/netty/handler/codec/marshalling/RiverThreadLocalMarshallingEncoderTest.java b/src/test/java/org/jboss/netty/handler/codec/marshalling/RiverThreadLocalMarshallingEncoderTest.java
+deleted file mode 100644
+index b01642f..0000000
+--- a/src/test/java/org/jboss/netty/handler/codec/marshalling/RiverThreadLocalMarshallingEncoderTest.java
++++ /dev/null
+@@ -1,25 +0,0 @@
+-/*
+- * Copyright 2012 The Netty Project
+- *
+- * The Netty Project licenses this file to you under the Apache License,
+- * version 2.0 (the "License"); you may not use this file except in compliance
+- * with the License. You may obtain a copy of the License at:
+- *
+- *   http://www.apache.org/licenses/LICENSE-2.0
+- *
+- * Unless required by applicable law or agreed to in writing, software
+- * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+- * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+- * License for the specific language governing permissions and limitations
+- * under the License.
+- */
+-package org.jboss.netty.handler.codec.marshalling;
+-
+-public class RiverThreadLocalMarshallingEncoderTest extends RiverMarshallingEncoderTest {
+-
+-    @Override
+-    protected MarshallerProvider createProvider() {
+-        return new ThreadLocalMarshallerProvider(createMarshallerFactory(), createMarshallingConfig());
+-    }
+-
+-}
+diff --git a/src/test/java/org/jboss/netty/handler/codec/marshalling/SerialCompatibleMarshallingDecoderTest.java b/src/test/java/org/jboss/netty/handler/codec/marshalling/SerialCompatibleMarshallingDecoderTest.java
+deleted file mode 100644
+index c015a94..0000000
+--- a/src/test/java/org/jboss/netty/handler/codec/marshalling/SerialCompatibleMarshallingDecoderTest.java
++++ /dev/null
+@@ -1,37 +0,0 @@
+-/*
+- * Copyright 2012 The Netty Project
+- *
+- * The Netty Project licenses this file to you under the Apache License,
+- * version 2.0 (the "License"); you may not use this file except in compliance
+- * with the License. You may obtain a copy of the License at:
+- *
+- *   http://www.apache.org/licenses/LICENSE-2.0
+- *
+- * Unless required by applicable law or agreed to in writing, software
+- * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+- * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+- * License for the specific language governing permissions and limitations
+- * under the License.
+- */
+-package org.jboss.netty.handler.codec.marshalling;
+-
+-import org.jboss.marshalling.MarshallerFactory;
+-import org.jboss.marshalling.Marshalling;
+-import org.jboss.marshalling.MarshallingConfiguration;
+-
+-public class SerialCompatibleMarshallingDecoderTest extends AbstractCompatibleMarshallingDecoderTest {
+-
+-    @Override
+-    protected MarshallerFactory createMarshallerFactory() {
+-        return Marshalling.getProvidedMarshallerFactory("serial");
+-    }
+-
+-    @Override
+-    protected MarshallingConfiguration createMarshallingConfig() {
+-        // Create a configuration
+-        final MarshallingConfiguration configuration = new MarshallingConfiguration();
+-        configuration.setVersion(5);
+-        return configuration;
+-    }
+-
+-}
+diff --git a/src/test/java/org/jboss/netty/handler/codec/marshalling/SerialCompatibleMarshallingEncoderTest.java b/src/test/java/org/jboss/netty/handler/codec/marshalling/SerialCompatibleMarshallingEncoderTest.java
+deleted file mode 100644
+index 0a9e85c..0000000
+--- a/src/test/java/org/jboss/netty/handler/codec/marshalling/SerialCompatibleMarshallingEncoderTest.java
++++ /dev/null
+@@ -1,38 +0,0 @@
+-/*
+- * Copyright 2012 The Netty Project
+- *
+- * The Netty Project licenses this file to you under the Apache License,
+- * version 2.0 (the "License"); you may not use this file except in compliance
+- * with the License. You may obtain a copy of the License at:
+- *
+- *   http://www.apache.org/licenses/LICENSE-2.0
+- *
+- * Unless required by applicable law or agreed to in writing, software
+- * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+- * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+- * License for the specific language governing permissions and limitations
+- * under the License.
+- */
+-package org.jboss.netty.handler.codec.marshalling;
+-
+-import org.jboss.marshalling.MarshallerFactory;
+-import org.jboss.marshalling.Marshalling;
+-import org.jboss.marshalling.MarshallingConfiguration;
+-
+-public class SerialCompatibleMarshallingEncoderTest extends AbstractCompatibleMarshallingEncoderTest {
+-
+-
+-    @Override
+-    protected MarshallerFactory createMarshallerFactory() {
+-        return Marshalling.getProvidedMarshallerFactory("serial");
+-    }
+-
+-    @Override
+-    protected MarshallingConfiguration createMarshallingConfig() {
+-        // Create a configuration
+-        final MarshallingConfiguration configuration = new MarshallingConfiguration();
+-        configuration.setVersion(5);
+-        return configuration;
+-    }
+-
+-}
+diff --git a/src/test/java/org/jboss/netty/handler/codec/marshalling/SerialContextBoundCompatibleMarshallingDecoderTest.java b/src/test/java/org/jboss/netty/handler/codec/marshalling/SerialContextBoundCompatibleMarshallingDecoderTest.java
+deleted file mode 100644
+index 0a6558b..0000000
+--- a/src/test/java/org/jboss/netty/handler/codec/marshalling/SerialContextBoundCompatibleMarshallingDecoderTest.java
++++ /dev/null
+@@ -1,29 +0,0 @@
+-/*
+- * Copyright 2012 The Netty Project
+- *
+- * The Netty Project licenses this file to you under the Apache License,
+- * version 2.0 (the "License"); you may not use this file except in compliance
+- * with the License. You may obtain a copy of the License at:
+- *
+- *   http://www.apache.org/licenses/LICENSE-2.0
+- *
+- * Unless required by applicable law or agreed to in writing, software
+- * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+- * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+- * License for the specific language governing permissions and limitations
+- * under the License.
+- */
+-package org.jboss.netty.handler.codec.marshalling;
+-
+-import org.jboss.marshalling.MarshallerFactory;
+-import org.jboss.marshalling.MarshallingConfiguration;
+-
+-public class SerialContextBoundCompatibleMarshallingDecoderTest extends SerialCompatibleMarshallingDecoderTest {
+-
+-
+-    @Override
+-    protected UnmarshallerProvider createProvider(MarshallerFactory factory, MarshallingConfiguration config) {
+-        return new ContextBoundUnmarshallerProvider(factory, config);
+-    }
+-
+-}
+diff --git a/src/test/java/org/jboss/netty/handler/codec/marshalling/SerialContextBoundMarshallingDecoderTest.java b/src/test/java/org/jboss/netty/handler/codec/marshalling/SerialContextBoundMarshallingDecoderTest.java
+deleted file mode 100644
+index 7fbbd39..0000000
+--- a/src/test/java/org/jboss/netty/handler/codec/marshalling/SerialContextBoundMarshallingDecoderTest.java
++++ /dev/null
+@@ -1,29 +0,0 @@
+-/*
+- * Copyright 2012 The Netty Project
+- *
+- * The Netty Project licenses this file to you under the Apache License,
+- * version 2.0 (the "License"); you may not use this file except in compliance
+- * with the License. You may obtain a copy of the License at:
+- *
+- *   http://www.apache.org/licenses/LICENSE-2.0
+- *
+- * Unless required by applicable law or agreed to in writing, software
+- * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+- * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+- * License for the specific language governing permissions and limitations
+- * under the License.
+- */
+-package org.jboss.netty.handler.codec.marshalling;
+-
+-import org.jboss.marshalling.MarshallerFactory;
+-import org.jboss.marshalling.MarshallingConfiguration;
+-
+-public class SerialContextBoundMarshallingDecoderTest extends SerialMarshallingDecoderTest {
+-
+-
+-    @Override
+-    protected UnmarshallerProvider createProvider(MarshallerFactory factory, MarshallingConfiguration config) {
+-        return new ContextBoundUnmarshallerProvider(factory, config);
+-    }
+-
+-}
+diff --git a/src/test/java/org/jboss/netty/handler/codec/marshalling/SerialMarshallingDecoderTest.java b/src/test/java/org/jboss/netty/handler/codec/marshalling/SerialMarshallingDecoderTest.java
+deleted file mode 100644
+index d60ad20..0000000
+--- a/src/test/java/org/jboss/netty/handler/codec/marshalling/SerialMarshallingDecoderTest.java
++++ /dev/null
+@@ -1,36 +0,0 @@
+-/*
+- * Copyright 2012 The Netty Project
+- *
+- * The Netty Project licenses this file to you under the Apache License,
+- * version 2.0 (the "License"); you may not use this file except in compliance
+- * with the License. You may obtain a copy of the License at:
+- *
+- *   http://www.apache.org/licenses/LICENSE-2.0
+- *
+- * Unless required by applicable law or agreed to in writing, software
+- * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+- * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+- * License for the specific language governing permissions and limitations
+- * under the License.
+- */
+-package org.jboss.netty.handler.codec.marshalling;
+-
+-import org.jboss.netty.buffer.ChannelBuffer;
+-import org.jboss.netty.buffer.ChannelBuffers;
+-import org.jboss.netty.channel.ChannelUpstreamHandler;
+-
+-public class SerialMarshallingDecoderTest extends SerialCompatibleMarshallingDecoderTest {
+-
+-    @Override
+-    protected ChannelBuffer input(byte[] input) {
+-        ChannelBuffer length = ChannelBuffers.buffer(4);
+-        length.writeInt(input.length);
+-        return ChannelBuffers.wrappedBuffer(length, ChannelBuffers.wrappedBuffer(input));
+-    }
+-
+-    @Override
+-    protected ChannelUpstreamHandler createDecoder(int maxObjectSize) {
+-        return new MarshallingDecoder(createProvider(createMarshallerFactory(), createMarshallingConfig()), maxObjectSize);
+-    }
+-
+-}
+diff --git a/src/test/java/org/jboss/netty/handler/codec/marshalling/SerialMarshallingEncoderTest.java b/src/test/java/org/jboss/netty/handler/codec/marshalling/SerialMarshallingEncoderTest.java
+deleted file mode 100644
+index 4a794dc..0000000
+--- a/src/test/java/org/jboss/netty/handler/codec/marshalling/SerialMarshallingEncoderTest.java
++++ /dev/null
+@@ -1,34 +0,0 @@
+-/*
+- * Copyright 2012 The Netty Project
+- *
+- * The Netty Project licenses this file to you under the Apache License,
+- * version 2.0 (the "License"); you may not use this file except in compliance
+- * with the License. You may obtain a copy of the License at:
+- *
+- *   http://www.apache.org/licenses/LICENSE-2.0
+- *
+- * Unless required by applicable law or agreed to in writing, software
+- * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+- * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+- * License for the specific language governing permissions and limitations
+- * under the License.
+- */
+-package org.jboss.netty.handler.codec.marshalling;
+-
+-import org.jboss.netty.buffer.ChannelBuffer;
+-import org.jboss.netty.channel.ChannelDownstreamHandler;
+-
+-public class SerialMarshallingEncoderTest extends SerialCompatibleMarshallingEncoderTest{
+-
+-    @Override
+-    protected ChannelBuffer truncate(ChannelBuffer buf) {
+-        buf.readInt();
+-        return buf;
+-    }
+-
+-    @Override
+-    protected ChannelDownstreamHandler createEncoder() {
+-        return new MarshallingEncoder(createProvider());
+-    }
+-
+-}
+diff --git a/src/test/java/org/jboss/netty/handler/codec/marshalling/SerialThreadLocalCompatibleMarshallingDecoderTest.java b/src/test/java/org/jboss/netty/handler/codec/marshalling/SerialThreadLocalCompatibleMarshallingDecoderTest.java
+deleted file mode 100644
+index 0eeda07..0000000
+--- a/src/test/java/org/jboss/netty/handler/codec/marshalling/SerialThreadLocalCompatibleMarshallingDecoderTest.java
++++ /dev/null
+@@ -1,29 +0,0 @@
+-/*
+- * Copyright 2012 The Netty Project
+- *
+- * The Netty Project licenses this file to you under the Apache License,
+- * version 2.0 (the "License"); you may not use this file except in compliance
+- * with the License. You may obtain a copy of the License at:
+- *
+- *   http://www.apache.org/licenses/LICENSE-2.0
+- *
+- * Unless required by applicable law or agreed to in writing, software
+- * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+- * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+- * License for the specific language governing permissions and limitations
+- * under the License.
+- */
+-package org.jboss.netty.handler.codec.marshalling;
+-
+-import org.jboss.marshalling.MarshallerFactory;
+-import org.jboss.marshalling.MarshallingConfiguration;
+-
+-public class SerialThreadLocalCompatibleMarshallingDecoderTest extends SerialCompatibleMarshallingDecoderTest {
+-
+-
+-    @Override
+-    protected UnmarshallerProvider createProvider(MarshallerFactory factory, MarshallingConfiguration config) {
+-        return new ThreadLocalUnmarshallerProvider(factory, config);
+-    }
+-
+-}
+diff --git a/src/test/java/org/jboss/netty/handler/codec/marshalling/SerialThreadLocalCompatibleMarshallingEncoderTest.java b/src/test/java/org/jboss/netty/handler/codec/marshalling/SerialThreadLocalCompatibleMarshallingEncoderTest.java
+deleted file mode 100644
+index fc29e46..0000000
+--- a/src/test/java/org/jboss/netty/handler/codec/marshalling/SerialThreadLocalCompatibleMarshallingEncoderTest.java
++++ /dev/null
+@@ -1,25 +0,0 @@
+-/*
+- * Copyright 2012 The Netty Project
+- *
+- * The Netty Project licenses this file to you under the Apache License,
+- * version 2.0 (the "License"); you may not use this file except in compliance
+- * with the License. You may obtain a copy of the License at:
+- *
+- *   http://www.apache.org/licenses/LICENSE-2.0
+- *
+- * Unless required by applicable law or agreed to in writing, software
+- * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+- * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+- * License for the specific language governing permissions and limitations
+- * under the License.
+- */
+-package org.jboss.netty.handler.codec.marshalling;
+-
+-public class SerialThreadLocalCompatibleMarshallingEncoderTest extends SerialCompatibleMarshallingEncoderTest {
+-
+-    @Override
+-    protected MarshallerProvider createProvider() {
+-        return new ThreadLocalMarshallerProvider(createMarshallerFactory(), createMarshallingConfig());
+-    }
+-
+-}
+diff --git a/src/test/java/org/jboss/netty/handler/codec/marshalling/SerialThreadLocalMarshallingDecoderTest.java b/src/test/java/org/jboss/netty/handler/codec/marshalling/SerialThreadLocalMarshallingDecoderTest.java
+deleted file mode 100644
+index 49a7dba..0000000
+--- a/src/test/java/org/jboss/netty/handler/codec/marshalling/SerialThreadLocalMarshallingDecoderTest.java
++++ /dev/null
+@@ -1,29 +0,0 @@
+-/*
+- * Copyright 2012 The Netty Project
+- *
+- * The Netty Project licenses this file to you under the Apache License,
+- * version 2.0 (the "License"); you may not use this file except in compliance
+- * with the License. You may obtain a copy of the License at:
+- *
+- *   http://www.apache.org/licenses/LICENSE-2.0
+- *
+- * Unless required by applicable law or agreed to in writing, software
+- * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+- * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+- * License for the specific language governing permissions and limitations
+- * under the License.
+- */
+-package org.jboss.netty.handler.codec.marshalling;
+-
+-import org.jboss.marshalling.MarshallerFactory;
+-import org.jboss.marshalling.MarshallingConfiguration;
+-
+-public class SerialThreadLocalMarshallingDecoderTest extends SerialMarshallingDecoderTest {
+-
+-
+-    @Override
+-    protected UnmarshallerProvider createProvider(MarshallerFactory factory, MarshallingConfiguration config) {
+-        return new ThreadLocalUnmarshallerProvider(factory, config);
+-    }
+-
+-}
+diff --git a/src/test/java/org/jboss/netty/handler/codec/marshalling/SerialThreadLocalMarshallingEncoderTest.java b/src/test/java/org/jboss/netty/handler/codec/marshalling/SerialThreadLocalMarshallingEncoderTest.java
+deleted file mode 100644
+index bf410dd..0000000
+--- a/src/test/java/org/jboss/netty/handler/codec/marshalling/SerialThreadLocalMarshallingEncoderTest.java
++++ /dev/null
+@@ -1,25 +0,0 @@
+-/*
+- * Copyright 2012 The Netty Project
+- *
+- * The Netty Project licenses this file to you under the Apache License,
+- * version 2.0 (the "License"); you may not use this file except in compliance
+- * with the License. You may obtain a copy of the License at:
+- *
+- *   http://www.apache.org/licenses/LICENSE-2.0
+- *
+- * Unless required by applicable law or agreed to in writing, software
+- * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+- * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+- * License for the specific language governing permissions and limitations
+- * under the License.
+- */
+-package org.jboss.netty.handler.codec.marshalling;
+-
+-public class SerialThreadLocalMarshallingEncoderTest extends SerialMarshallingEncoderTest {
+-
+-    @Override
+-    protected MarshallerProvider createProvider() {
+-        return new ThreadLocalMarshallerProvider(createMarshallerFactory(), createMarshallingConfig());
+-    }
+-
+-}
+diff --git a/src/test/java/org/jboss/netty/logging/JBossLoggerFactoryTest.java b/src/test/java/org/jboss/netty/logging/JBossLoggerFactoryTest.java
+deleted file mode 100644
+index 14871c1..0000000
+--- a/src/test/java/org/jboss/netty/logging/JBossLoggerFactoryTest.java
++++ /dev/null
+@@ -1,30 +0,0 @@
+-/*
+- * Copyright 2012 The Netty Project
+- *
+- * The Netty Project licenses this file to you under the Apache License,
+- * version 2.0 (the "License"); you may not use this file except in compliance
+- * with the License. You may obtain a copy of the License at:
+- *
+- *   http://www.apache.org/licenses/LICENSE-2.0
+- *
+- * Unless required by applicable law or agreed to in writing, software
+- * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+- * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+- * License for the specific language governing permissions and limitations
+- * under the License.
+- */
+-package org.jboss.netty.logging;
+-
+-import static org.junit.Assert.*;
+-
+-import org.junit.Test;
+-
+-public class JBossLoggerFactoryTest {
+-
+-    @Test
+-    public void testCreation() {
+-        InternalLogger logger = new JBossLoggerFactory().newInstance("foo");
+-        assertTrue(logger instanceof JBossLogger);
+-        assertEquals("foo", logger.toString());
+-    }
+-}
+diff --git a/src/test/java/org/jboss/netty/logging/JBossLoggerTest.java b/src/test/java/org/jboss/netty/logging/JBossLoggerTest.java
+deleted file mode 100644
+index 8ba9e33..0000000
+--- a/src/test/java/org/jboss/netty/logging/JBossLoggerTest.java
++++ /dev/null
+@@ -1,180 +0,0 @@
+-/*
+- * Copyright 2012 The Netty Project
+- *
+- * The Netty Project licenses this file to you under the Apache License,
+- * version 2.0 (the "License"); you may not use this file except in compliance
+- * with the License. You may obtain a copy of the License at:
+- *
+- *   http://www.apache.org/licenses/LICENSE-2.0
+- *
+- * Unless required by applicable law or agreed to in writing, software
+- * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+- * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+- * License for the specific language governing permissions and limitations
+- * under the License.
+- */
+-package org.jboss.netty.logging;
+-
+-import static org.easymock.EasyMock.*;
+-import static org.junit.Assert.*;
+-
+-import org.jboss.logging.Logger;
+-import org.junit.Test;
+-
+-public class JBossLoggerTest {
+-    private static final Exception e = new Exception();
+-
+-    @Test
+-    @SuppressWarnings("deprecation")
+-    public void testIsDebugEnabled() {
+-        Logger mock =
+-            createStrictMock(Logger.class);
+-
+-        expect(mock.isDebugEnabled()).andReturn(true);
+-        replay(mock);
+-
+-        InternalLogger logger = new JBossLogger(mock);
+-        assertTrue(logger.isDebugEnabled());
+-        verify(mock);
+-    }
+-
+-    @Test
+-    @SuppressWarnings("deprecation")
+-    public void testIsInfoEnabled() {
+-        Logger mock =
+-            createStrictMock(Logger.class);
+-
+-        expect(mock.isInfoEnabled()).andReturn(true);
+-        replay(mock);
+-
+-        InternalLogger logger = new JBossLogger(mock);
+-        assertTrue(logger.isInfoEnabled());
+-        verify(mock);
+-    }
+-
+-    @Test
+-    public void testIsWarnEnabled() {
+-        Logger mock =
+-            createStrictMock(Logger.class);
+-        replay(mock);
+-
+-        InternalLogger logger = new JBossLogger(mock);
+-        assertTrue(logger.isWarnEnabled());
+-        verify(mock);
+-    }
+-
+-    @Test
+-    public void testIsErrorEnabled() {
+-        Logger mock =
+-            createStrictMock(Logger.class);
+-        replay(mock);
+-
+-        InternalLogger logger = new JBossLogger(mock);
+-        assertTrue(logger.isErrorEnabled());
+-        verify(mock);
+-    }
+-
+-    @Test
+-    public void testDebug() {
+-        Logger mock =
+-            createStrictMock(Logger.class);
+-
+-        mock.debug("a");
+-        replay(mock);
+-
+-        InternalLogger logger = new JBossLogger(mock);
+-        logger.debug("a");
+-        verify(mock);
+-    }
+-
+-    @Test
+-    public void testDebugWithException() {
+-        Logger mock =
+-            createStrictMock(Logger.class);
+-
+-        mock.debug("a", e);
+-        replay(mock);
+-
+-        InternalLogger logger = new JBossLogger(mock);
+-        logger.debug("a", e);
+-        verify(mock);
+-    }
+-
+-    @Test
+-    public void testInfo() {
+-        Logger mock =
+-            createStrictMock(Logger.class);
+-
+-        mock.info("a");
+-        replay(mock);
+-
+-        InternalLogger logger = new JBossLogger(mock);
+-        logger.info("a");
+-        verify(mock);
+-    }
+-
+-    @Test
+-    public void testInfoWithException() {
+-        Logger mock =
+-            createStrictMock(Logger.class);
+-
+-        mock.info("a", e);
+-        replay(mock);
+-
+-        InternalLogger logger = new JBossLogger(mock);
+-        logger.info("a", e);
+-        verify(mock);
+-    }
+-
+-    @Test
+-    public void testWarn() {
+-        Logger mock =
+-            createStrictMock(Logger.class);
+-
+-        mock.warn("a");
+-        replay(mock);
+-
+-        InternalLogger logger = new JBossLogger(mock);
+-        logger.warn("a");
+-        verify(mock);
+-    }
+-
+-    @Test
+-    public void testWarnWithException() {
+-        Logger mock =
+-            createStrictMock(Logger.class);
+-
+-        mock.warn("a", e);
+-        replay(mock);
+-
+-        InternalLogger logger = new JBossLogger(mock);
+-        logger.warn("a", e);
+-        verify(mock);
+-    }
+-
+-    @Test
+-    public void testError() {
+-        Logger mock =
+-            createStrictMock(Logger.class);
+-
+-        mock.error("a");
+-        replay(mock);
+-
+-        InternalLogger logger = new JBossLogger(mock);
+-        logger.error("a");
+-        verify(mock);
+-    }
+-
+-    @Test
+-    public void testErrorWithException() {
+-        Logger mock =
+-            createStrictMock(Logger.class);
+-
+-        mock.error("a", e);
+-        replay(mock);
+-
+-        InternalLogger logger = new JBossLogger(mock);
+-        logger.error("a", e);
+-        verify(mock);
+-    }
+-}
+-- 
+1.8.3.1
+
