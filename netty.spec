@@ -15,7 +15,7 @@ Version:        3.6.3
 # 60.X where X is an increasing int. 60 for rhel-6. We use
 # 70.X for rhel-7. For some reason we cannot rely on the
 # dist tag.
-Release:        70.4%{?dist}
+Release:        70.5%{?dist}
 Summary:        An asynchronous event-driven network application framework and tools for Java
 
 Group:          Development/Libraries
@@ -125,6 +125,9 @@ sed -i s/org.jboss.netty.util.internal.jzlib/com.jcraft.jzlib/ \
 %doc LICENSE.txt NOTICE.txt
 
 %changelog
+* Wed Jan 27 2016 Severin Gehwolf <sgehwolf@redhat.com> - 3.6.3-70.5
+- Rebuild for RHSCL 2.2.
+
 * Mon Jan 19 2015 Severin Gehwolf <sgehwolf@redhat.com> - 3.6.3-70.4
 - Manually require maven30-ant-contrib since maven-antrun-plugin
   needs it.
