@@ -1,0 +1,104 @@
+From 423dc10334f211db7256944a0a9f40c8ca82359b Mon Sep 17 00:00:00 2001
+From: Mikolaj Izdebski <mizdebsk@redhat.com>
+Date: Thu, 13 Dec 2012 04:20:46 +0100
+Subject: [PATCH] Port netty to jzlib 1.1.0
+
+---
+ .../netty/handler/codec/compression/ZlibDecoder.java   |  2 +-
+ .../netty/handler/codec/compression/ZlibEncoder.java   |  6 ++----
+ .../netty/handler/codec/compression/ZlibUtil.java      | 18 ++++++++++--------
+ .../codec/spdy/SpdyHeaderBlockJZlibCompressor.java     |  2 +-
+ 4 files changed, 14 insertions(+), 14 deletions(-)
+
+diff --git a/src/main/java/org/jboss/netty/handler/codec/compression/ZlibDecoder.java b/src/main/java/org/jboss/netty/handler/codec/compression/ZlibDecoder.java
+index f31a430..e93efd8 100644
+--- a/src/main/java/org/jboss/netty/handler/codec/compression/ZlibDecoder.java
++++ b/src/main/java/org/jboss/netty/handler/codec/compression/ZlibDecoder.java
+@@ -77,7 +77,7 @@ public class ZlibDecoder extends OneToOneDecoder {
+ 
+         synchronized (z) {
+             int resultCode;
+-            resultCode = z.inflateInit(JZlib.W_ZLIB);
++            resultCode = z.inflateInit();
+             if (resultCode != JZlib.Z_OK) {
+                 ZlibUtil.fail(z, "initialization failure", resultCode);
+             }
+diff --git a/src/main/java/org/jboss/netty/handler/codec/compression/ZlibEncoder.java b/src/main/java/org/jboss/netty/handler/codec/compression/ZlibEncoder.java
+index 46f711e..88e7342 100644
+--- a/src/main/java/org/jboss/netty/handler/codec/compression/ZlibEncoder.java
++++ b/src/main/java/org/jboss/netty/handler/codec/compression/ZlibEncoder.java
+@@ -144,8 +144,7 @@ public class ZlibEncoder extends OneToOneStrictEncoder implements LifeCycleAware
+         }
+ 
+         synchronized (z) {
+-            int resultCode = z.deflateInit(compressionLevel, windowBits, memLevel,
+-                    ZlibUtil.convertWrapperType(wrapper));
++            int resultCode = z.deflateInit(compressionLevel, ZlibUtil.convertWrapperType(wrapper), memLevel);
+             if (resultCode != JZlib.Z_OK) {
+                 ZlibUtil.fail(z, "initialization failure", resultCode);
+             }
+@@ -230,8 +229,7 @@ public class ZlibEncoder extends OneToOneStrictEncoder implements LifeCycleAware
+ 
+         synchronized (z) {
+             int resultCode;
+-            resultCode = z.deflateInit(compressionLevel, windowBits, memLevel,
+-                    JZlib.W_ZLIB); // Default: ZLIB format
++            resultCode = z.deflateInit(compressionLevel, windowBits, memLevel);
+             if (resultCode != JZlib.Z_OK) {
+                 ZlibUtil.fail(z, "initialization failure", resultCode);
+             } else {
+diff --git a/src/main/java/org/jboss/netty/handler/codec/compression/ZlibUtil.java b/src/main/java/org/jboss/netty/handler/codec/compression/ZlibUtil.java
+index 954edde..93d204f 100644
+--- a/src/main/java/org/jboss/netty/handler/codec/compression/ZlibUtil.java
++++ b/src/main/java/org/jboss/netty/handler/codec/compression/ZlibUtil.java
+@@ -32,25 +32,27 @@ final class ZlibUtil {
+                 (z.msg != null? ": " + z.msg : ""));
+     }
+ 
+-    static Enum<?> convertWrapperType(ZlibWrapper wrapper) {
+-        Enum<?> convertedWrapperType;
+-        switch (wrapper) {
++    static int convertWrapperType(ZlibWrapper wrapper, int windowBits) {
++      switch (wrapper) {
+         case NONE:
+-            convertedWrapperType = JZlib.W_NONE;
++            windowBits = -windowBits;
+             break;
+         case ZLIB:
+-            convertedWrapperType = JZlib.W_ZLIB;
+             break;
+         case GZIP:
+-            convertedWrapperType = JZlib.W_GZIP;
++            windowBits += 16;
+             break;
+         case ZLIB_OR_NONE:
+-            convertedWrapperType = JZlib.W_ZLIB_OR_NONE;
+             break;
+         default:
+             throw new Error();
+         }
+-        return convertedWrapperType;
++
++        return windowBits;
++    }
++
++    static int convertWrapperType(ZlibWrapper wrapper) {
++        return convertWrapperType(wrapper, 15);
+     }
+ 
+     private ZlibUtil() {
+diff --git a/src/main/java/org/jboss/netty/handler/codec/spdy/SpdyHeaderBlockJZlibCompressor.java b/src/main/java/org/jboss/netty/handler/codec/spdy/SpdyHeaderBlockJZlibCompressor.java
+index 612419d..957649b 100644
+--- a/src/main/java/org/jboss/netty/handler/codec/spdy/SpdyHeaderBlockJZlibCompressor.java
++++ b/src/main/java/org/jboss/netty/handler/codec/spdy/SpdyHeaderBlockJZlibCompressor.java
+@@ -46,7 +46,7 @@ class SpdyHeaderBlockJZlibCompressor extends SpdyHeaderBlockCompressor {
+         }
+ 
+         int resultCode = z.deflateInit(
+-                compressionLevel, windowBits, memLevel, JZlib.W_ZLIB);
++                compressionLevel, windowBits, memLevel);
+         if (resultCode != JZlib.Z_OK) {
+             throw new CompressionException(
+                     "failed to initialize an SPDY header block deflater: " + resultCode);
+-- 
+1.7.11.7
