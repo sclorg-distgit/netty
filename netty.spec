@@ -22,7 +22,7 @@
 
 Name:           %{?scl_prefix}netty
 Version:        3.6.3
-Release:        %{custom_release}.1%{?dist}
+Release:        %{custom_release}.2%{?dist}
 Summary:        An asynchronous event-driven network application framework and tools for Java
 
 Group:          Development/Libraries
@@ -130,5 +130,8 @@ sed -i s/org.jboss.netty.util.internal.jzlib/com.jcraft.jzlib/ \
 %doc LICENSE.txt NOTICE.txt
 
 %changelog
+* Tue Jan 17 2017 Jie Kang <jkang@redhat.com> - 3.6.3-2
+- Rebuild for RHSCL 2.4.
+
 * Fri Jun 24 2016 Severin Gehwolf <sgehwolf@redhat.com> - 3.6.3-1
 - Initial package.
