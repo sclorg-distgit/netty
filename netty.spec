@@ -22,7 +22,7 @@
 
 Name:           %{?scl_prefix}netty
 Version:        3.6.3
-Release:        %{custom_release}.1%{?dist}
+Release:        %{custom_release}.2%{?dist}
 Summary:        An asynchronous event-driven network application framework and tools for Java
 
 Group:          Development/Libraries
@@ -101,6 +101,9 @@ rm -rf jar doc license
 %pom_xpath_set "pom:dependency[pom:scope[text()='compile']
 	       and pom:optional[text()='true']]/pom:scope" provided
 
+# Reduce javadoc strictness
+%pom_xpath_inject "pom:plugin[pom:artifactId[text()='maven-javadoc-plugin']]" "<configuration><additionalparam>-Xdoclint:none</additionalparam></configuration>"
+
 # Remove bundled jzlib and use system jzlib
 rm -rf src/main/java/org/jboss/netty/util/internal/jzlib
 %pom_add_dep com.jcraft:jzlib
@@ -130,5 +133,11 @@ sed -i s/org.jboss.netty.util.internal.jzlib/com.jcraft.jzlib/ \
 %doc LICENSE.txt NOTICE.txt
 
 %changelog
+* Tue Jan 17 2017 Jie Kang <jkang@redhat.com> - 3.6.3-2
+- Reduce javadoc strictness
+
+* Tue Jan 17 2017 Jie Kang <jkang@redhat.com> - 3.6.3-2
+- Rebuild for RHSCL 2.4.
+
 * Fri Jun 24 2016 Severin Gehwolf <sgehwolf@redhat.com> - 3.6.3-1
 - Initial package.
