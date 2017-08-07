@@ -1,0 +1,27 @@
+diff --git a/transport-native-epoll/pom.xml b/transport-native-epoll/pom.xml
+index 06d42bf..34fdfb8 100644
+--- a/transport-native-epoll/pom.xml
++++ b/transport-native-epoll/pom.xml
+@@ -176,22 +176,6 @@
+             </configuration>
+           </execution>
+           <execution>
+-            <!-- Phase must be before regex-combined-sendmmsg -->
+-            <phase>initialize</phase>
+-            <id>regex-linux-sendmmsg</id>
+-            <goals>
+-              <goal>regex-property</goal>
+-            </goals>
+-            <configuration>
+-              <name>linux.sendmmsg.support</name>
+-              <value>${uname_os_version}</value>
+-              <!-- Version must be >= 3 - set to IO_NETTY_SENDMSSG_NOT_FOUND if this version is not satisfied -->
+-              <regex>^((?!^[0-9]*[3-9]\.?.*).)*$</regex>
+-              <replacement>IO_NETTY_SENDMSSG_NOT_FOUND</replacement>
+-              <failIfNoMatch>false</failIfNoMatch>
+-            </configuration>
+-          </execution>
+-          <execution>
+             <!-- Phase must be before regex-unset-if-needed-sendmmsg -->
+             <phase>generate-sources</phase>
+             <id>regex-combined-sendmmsg</id>

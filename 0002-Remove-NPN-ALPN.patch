@@ -1,0 +1,884 @@
+From cfb6f2a620525a94d6964c287792f2645bff4f4a Mon Sep 17 00:00:00 2001
+From: Severin Gehwolf <sgehwolf@redhat.com>
+Date: Thu, 20 Oct 2016 16:18:10 +0200
+Subject: [PATCH 2/2] Remove NPN ALPN
+
+---
+ .../ssl/JdkAlpnApplicationProtocolNegotiator.java  | 120 ---------
+ .../io/netty/handler/ssl/JdkAlpnSslEngine.java     | 124 ----------
+ .../ssl/JdkNpnApplicationProtocolNegotiator.java   | 120 ---------
+ .../java/io/netty/handler/ssl/JdkNpnSslEngine.java | 122 ---------
+ .../java/io/netty/handler/ssl/JdkSslContext.java   |  44 ----
+ .../io/netty/handler/ssl/JdkSslEngineTest.java     | 273 ---------------------
+ 6 files changed, 803 deletions(-)
+ delete mode 100644 handler/src/main/java/io/netty/handler/ssl/JdkAlpnApplicationProtocolNegotiator.java
+ delete mode 100644 handler/src/main/java/io/netty/handler/ssl/JdkAlpnSslEngine.java
+ delete mode 100644 handler/src/main/java/io/netty/handler/ssl/JdkNpnApplicationProtocolNegotiator.java
+ delete mode 100644 handler/src/main/java/io/netty/handler/ssl/JdkNpnSslEngine.java
+
+diff --git a/handler/src/main/java/io/netty/handler/ssl/JdkAlpnApplicationProtocolNegotiator.java b/handler/src/main/java/io/netty/handler/ssl/JdkAlpnApplicationProtocolNegotiator.java
+deleted file mode 100644
+index aaaf5b7..0000000
+--- a/handler/src/main/java/io/netty/handler/ssl/JdkAlpnApplicationProtocolNegotiator.java
++++ /dev/null
+@@ -1,120 +0,0 @@
+-/*
+- * Copyright 2014 The Netty Project
+- *
+- * The Netty Project licenses this file to you under the Apache License,
+- * version 2.0 (the "License"); you may not use this file except in compliance
+- * with the License. You may obtain a copy of the License at:
+- *
+- *   http://www.apache.org/licenses/LICENSE-2.0
+- *
+- * Unless required by applicable law or agreed to in writing, software
+- * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+- * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+- * License for the specific language governing permissions and limitations
+- * under the License.
+- */
+-package io.netty.handler.ssl;
+-
+-import javax.net.ssl.SSLEngine;
+-
+-/**
+- * The {@link JdkApplicationProtocolNegotiator} to use if you need ALPN and are using {@link SslProvider#JDK}.
+- */
+-public final class JdkAlpnApplicationProtocolNegotiator extends JdkBaseApplicationProtocolNegotiator {
+-    private static final SslEngineWrapperFactory ALPN_WRAPPER = new SslEngineWrapperFactory() {
+-        {
+-            if (!JdkAlpnSslEngine.isAvailable()) {
+-                throw new RuntimeException("ALPN unsupported. Is your classpatch configured correctly?"
+-                        + " See http://www.eclipse.org/jetty/documentation/current/alpn-chapter.html#alpn-starting");
+-            }
+-        }
+-
+-        @Override
+-        public SSLEngine wrapSslEngine(SSLEngine engine, JdkApplicationProtocolNegotiator applicationNegotiator,
+-                boolean isServer) {
+-            return new JdkAlpnSslEngine(engine, applicationNegotiator, isServer);
+-        }
+-    };
+-
+-    /**
+-     * Create a new instance.
+-     * @param protocols The order of iteration determines the preference of support for protocols.
+-     */
+-    public JdkAlpnApplicationProtocolNegotiator(Iterable<String> protocols) {
+-        this(false, protocols);
+-    }
+-
+-    /**
+-     * Create a new instance.
+-     * @param protocols The order of iteration determines the preference of support for protocols.
+-     */
+-    public JdkAlpnApplicationProtocolNegotiator(String... protocols) {
+-        this(false, protocols);
+-    }
+-
+-    /**
+-     * Create a new instance.
+-     * @param failIfNoCommonProtocols Fail with a fatal alert if not common protocols are detected.
+-     * @param protocols The order of iteration determines the preference of support for protocols.
+-     */
+-    public JdkAlpnApplicationProtocolNegotiator(boolean failIfNoCommonProtocols, Iterable<String> protocols) {
+-        this(failIfNoCommonProtocols, failIfNoCommonProtocols, protocols);
+-    }
+-
+-    /**
+-     * Create a new instance.
+-     * @param failIfNoCommonProtocols Fail with a fatal alert if not common protocols are detected.
+-     * @param protocols The order of iteration determines the preference of support for protocols.
+-     */
+-    public JdkAlpnApplicationProtocolNegotiator(boolean failIfNoCommonProtocols, String... protocols) {
+-        this(failIfNoCommonProtocols, failIfNoCommonProtocols, protocols);
+-    }
+-
+-    /**
+-     * Create a new instance.
+-     * @param clientFailIfNoCommonProtocols Client side fail with a fatal alert if not common protocols are detected.
+-     * @param serverFailIfNoCommonProtocols Server side fail with a fatal alert if not common protocols are detected.
+-     * @param protocols The order of iteration determines the preference of support for protocols.
+-     */
+-    public JdkAlpnApplicationProtocolNegotiator(boolean clientFailIfNoCommonProtocols,
+-            boolean serverFailIfNoCommonProtocols, Iterable<String> protocols) {
+-        this(serverFailIfNoCommonProtocols ? FAIL_SELECTOR_FACTORY : NO_FAIL_SELECTOR_FACTORY,
+-                clientFailIfNoCommonProtocols ? FAIL_SELECTION_LISTENER_FACTORY : NO_FAIL_SELECTION_LISTENER_FACTORY,
+-                protocols);
+-    }
+-
+-    /**
+-     * Create a new instance.
+-     * @param clientFailIfNoCommonProtocols Client side fail with a fatal alert if not common protocols are detected.
+-     * @param serverFailIfNoCommonProtocols Server side fail with a fatal alert if not common protocols are detected.
+-     * @param protocols The order of iteration determines the preference of support for protocols.
+-     */
+-    public JdkAlpnApplicationProtocolNegotiator(boolean clientFailIfNoCommonProtocols,
+-            boolean serverFailIfNoCommonProtocols, String... protocols) {
+-        this(serverFailIfNoCommonProtocols ? FAIL_SELECTOR_FACTORY : NO_FAIL_SELECTOR_FACTORY,
+-                clientFailIfNoCommonProtocols ? FAIL_SELECTION_LISTENER_FACTORY : NO_FAIL_SELECTION_LISTENER_FACTORY,
+-                protocols);
+-    }
+-
+-    /**
+-     * Create a new instance.
+-     * @param selectorFactory The factory which provides classes responsible for selecting the protocol.
+-     * @param listenerFactory The factory which provides to be notified of which protocol was selected.
+-     * @param protocols The order of iteration determines the preference of support for protocols.
+-     */
+-    public JdkAlpnApplicationProtocolNegotiator(ProtocolSelectorFactory selectorFactory,
+-            ProtocolSelectionListenerFactory listenerFactory, Iterable<String> protocols) {
+-        super(ALPN_WRAPPER, selectorFactory, listenerFactory, protocols);
+-    }
+-
+-    /**
+-     * Create a new instance.
+-     * @param selectorFactory The factory which provides classes responsible for selecting the protocol.
+-     * @param listenerFactory The factory which provides to be notified of which protocol was selected.
+-     * @param protocols The order of iteration determines the preference of support for protocols.
+-     */
+-    public JdkAlpnApplicationProtocolNegotiator(ProtocolSelectorFactory selectorFactory,
+-            ProtocolSelectionListenerFactory listenerFactory, String... protocols) {
+-        super(ALPN_WRAPPER, selectorFactory, listenerFactory, protocols);
+-    }
+-}
+diff --git a/handler/src/main/java/io/netty/handler/ssl/JdkAlpnSslEngine.java b/handler/src/main/java/io/netty/handler/ssl/JdkAlpnSslEngine.java
+deleted file mode 100644
+index bdf3aca..0000000
+--- a/handler/src/main/java/io/netty/handler/ssl/JdkAlpnSslEngine.java
++++ /dev/null
+@@ -1,124 +0,0 @@
+-/*
+- * Copyright 2014 The Netty Project
+- *
+- * The Netty Project licenses this file to you under the Apache License,
+- * version 2.0 (the "License"); you may not use this file except in compliance
+- * with the License. You may obtain a copy of the License at:
+- *
+- *   http://www.apache.org/licenses/LICENSE-2.0
+- *
+- * Unless required by applicable law or agreed to in writing, software
+- * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+- * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+- * License for the specific language governing permissions and limitations
+- * under the License.
+- */
+-package io.netty.handler.ssl;
+-
+-import static io.netty.util.internal.ObjectUtil.checkNotNull;
+-import io.netty.handler.ssl.JdkApplicationProtocolNegotiator.ProtocolSelectionListener;
+-import io.netty.handler.ssl.JdkApplicationProtocolNegotiator.ProtocolSelector;
+-
+-import java.util.LinkedHashSet;
+-import java.util.List;
+-
+-import javax.net.ssl.SSLEngine;
+-import javax.net.ssl.SSLException;
+-import javax.net.ssl.SSLHandshakeException;
+-
+-import org.eclipse.jetty.alpn.ALPN;
+-import org.eclipse.jetty.alpn.ALPN.ClientProvider;
+-import org.eclipse.jetty.alpn.ALPN.ServerProvider;
+-
+-final class JdkAlpnSslEngine extends JdkSslEngine {
+-    private static boolean available;
+-
+-    static boolean isAvailable() {
+-        updateAvailability();
+-        return available;
+-    }
+-
+-    private static void updateAvailability() {
+-        if (available) {
+-            return;
+-        }
+-
+-        try {
+-            // Always use bootstrap class loader.
+-            Class.forName("sun.security.ssl.ALPNExtension", true, null);
+-            available = true;
+-        } catch (Exception ignore) {
+-            // alpn-boot was not loaded.
+-        }
+-    }
+-
+-    JdkAlpnSslEngine(SSLEngine engine, final JdkApplicationProtocolNegotiator applicationNegotiator, boolean server) {
+-        super(engine);
+-        checkNotNull(applicationNegotiator, "applicationNegotiator");
+-
+-        if (server) {
+-            final ProtocolSelector protocolSelector = checkNotNull(applicationNegotiator.protocolSelectorFactory()
+-                    .newSelector(this, new LinkedHashSet<String>(applicationNegotiator.protocols())),
+-                    "protocolSelector");
+-            ALPN.put(engine, new ServerProvider() {
+-                @Override
+-                public String select(List<String> protocols) throws SSLException {
+-                    try {
+-                        return protocolSelector.select(protocols);
+-                    } catch (SSLHandshakeException e) {
+-                        throw e;
+-                    } catch (Throwable t) {
+-                        SSLHandshakeException e = new SSLHandshakeException(t.getMessage());
+-                        e.initCause(t);
+-                        throw e;
+-                    }
+-                }
+-
+-                @Override
+-                public void unsupported() {
+-                    protocolSelector.unsupported();
+-                }
+-            });
+-        } else {
+-            final ProtocolSelectionListener protocolListener = checkNotNull(applicationNegotiator
+-                    .protocolListenerFactory().newListener(this, applicationNegotiator.protocols()),
+-                    "protocolListener");
+-            ALPN.put(engine, new ClientProvider() {
+-                @Override
+-                public List<String> protocols() {
+-                    return applicationNegotiator.protocols();
+-                }
+-
+-                @Override
+-                public void selected(String protocol) throws SSLException {
+-                    try {
+-                        protocolListener.selected(protocol);
+-                    } catch (SSLHandshakeException e) {
+-                        throw e;
+-                    } catch (Throwable t) {
+-                        SSLHandshakeException e = new SSLHandshakeException(t.getMessage());
+-                        e.initCause(t);
+-                        throw e;
+-                    }
+-                }
+-
+-                @Override
+-                public void unsupported() {
+-                    protocolListener.unsupported();
+-                }
+-            });
+-        }
+-    }
+-
+-    @Override
+-    public void closeInbound() throws SSLException {
+-        ALPN.remove(getWrappedEngine());
+-        super.closeInbound();
+-    }
+-
+-    @Override
+-    public void closeOutbound() {
+-        ALPN.remove(getWrappedEngine());
+-        super.closeOutbound();
+-    }
+-}
+diff --git a/handler/src/main/java/io/netty/handler/ssl/JdkNpnApplicationProtocolNegotiator.java b/handler/src/main/java/io/netty/handler/ssl/JdkNpnApplicationProtocolNegotiator.java
+deleted file mode 100644
+index c893f05..0000000
+--- a/handler/src/main/java/io/netty/handler/ssl/JdkNpnApplicationProtocolNegotiator.java
++++ /dev/null
+@@ -1,120 +0,0 @@
+-/*
+- * Copyright 2014 The Netty Project
+- *
+- * The Netty Project licenses this file to you under the Apache License,
+- * version 2.0 (the "License"); you may not use this file except in compliance
+- * with the License. You may obtain a copy of the License at:
+- *
+- *   http://www.apache.org/licenses/LICENSE-2.0
+- *
+- * Unless required by applicable law or agreed to in writing, software
+- * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+- * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+- * License for the specific language governing permissions and limitations
+- * under the License.
+- */
+-package io.netty.handler.ssl;
+-
+-import javax.net.ssl.SSLEngine;
+-
+-/**
+- * The {@link JdkApplicationProtocolNegotiator} to use if you need NPN and are using {@link SslProvider#JDK}.
+- */
+-public final class JdkNpnApplicationProtocolNegotiator extends JdkBaseApplicationProtocolNegotiator {
+-    private static final SslEngineWrapperFactory NPN_WRAPPER = new SslEngineWrapperFactory() {
+-        {
+-            if (!JdkNpnSslEngine.isAvailable()) {
+-                throw new RuntimeException("NPN unsupported. Is your classpatch configured correctly?"
+-                        + " See http://www.eclipse.org/jetty/documentation/current/npn-chapter.html#npn-starting");
+-            }
+-        }
+-
+-        @Override
+-        public SSLEngine wrapSslEngine(SSLEngine engine, JdkApplicationProtocolNegotiator applicationNegotiator,
+-                boolean isServer) {
+-            return new JdkNpnSslEngine(engine, applicationNegotiator, isServer);
+-        }
+-    };
+-
+-    /**
+-     * Create a new instance.
+-     * @param protocols The order of iteration determines the preference of support for protocols.
+-     */
+-    public JdkNpnApplicationProtocolNegotiator(Iterable<String> protocols) {
+-        this(false, protocols);
+-    }
+-
+-    /**
+-     * Create a new instance.
+-     * @param protocols The order of iteration determines the preference of support for protocols.
+-     */
+-    public JdkNpnApplicationProtocolNegotiator(String... protocols) {
+-        this(false, protocols);
+-    }
+-
+-    /**
+-     * Create a new instance.
+-     * @param failIfNoCommonProtocols Fail with a fatal alert if not common protocols are detected.
+-     * @param protocols The order of iteration determines the preference of support for protocols.
+-     */
+-    public JdkNpnApplicationProtocolNegotiator(boolean failIfNoCommonProtocols, Iterable<String> protocols) {
+-        this(failIfNoCommonProtocols, failIfNoCommonProtocols, protocols);
+-    }
+-
+-    /**
+-     * Create a new instance.
+-     * @param failIfNoCommonProtocols Fail with a fatal alert if not common protocols are detected.
+-     * @param protocols The order of iteration determines the preference of support for protocols.
+-     */
+-    public JdkNpnApplicationProtocolNegotiator(boolean failIfNoCommonProtocols, String... protocols) {
+-        this(failIfNoCommonProtocols, failIfNoCommonProtocols, protocols);
+-    }
+-
+-    /**
+-     * Create a new instance.
+-     * @param clientFailIfNoCommonProtocols Client side fail with a fatal alert if not common protocols are detected.
+-     * @param serverFailIfNoCommonProtocols Server side fail with a fatal alert if not common protocols are detected.
+-     * @param protocols The order of iteration determines the preference of support for protocols.
+-     */
+-    public JdkNpnApplicationProtocolNegotiator(boolean clientFailIfNoCommonProtocols,
+-            boolean serverFailIfNoCommonProtocols, Iterable<String> protocols) {
+-        this(clientFailIfNoCommonProtocols ? FAIL_SELECTOR_FACTORY : NO_FAIL_SELECTOR_FACTORY,
+-                serverFailIfNoCommonProtocols ? FAIL_SELECTION_LISTENER_FACTORY : NO_FAIL_SELECTION_LISTENER_FACTORY,
+-                protocols);
+-    }
+-
+-    /**
+-     * Create a new instance.
+-     * @param clientFailIfNoCommonProtocols Client side fail with a fatal alert if not common protocols are detected.
+-     * @param serverFailIfNoCommonProtocols Server side fail with a fatal alert if not common protocols are detected.
+-     * @param protocols The order of iteration determines the preference of support for protocols.
+-     */
+-    public JdkNpnApplicationProtocolNegotiator(boolean clientFailIfNoCommonProtocols,
+-            boolean serverFailIfNoCommonProtocols, String... protocols) {
+-        this(clientFailIfNoCommonProtocols ? FAIL_SELECTOR_FACTORY : NO_FAIL_SELECTOR_FACTORY,
+-                serverFailIfNoCommonProtocols ? FAIL_SELECTION_LISTENER_FACTORY : NO_FAIL_SELECTION_LISTENER_FACTORY,
+-                protocols);
+-    }
+-
+-    /**
+-     * Create a new instance.
+-     * @param selectorFactory The factory which provides classes responsible for selecting the protocol.
+-     * @param listenerFactory The factory which provides to be notified of which protocol was selected.
+-     * @param protocols The order of iteration determines the preference of support for protocols.
+-     */
+-    public JdkNpnApplicationProtocolNegotiator(ProtocolSelectorFactory selectorFactory,
+-            ProtocolSelectionListenerFactory listenerFactory, Iterable<String> protocols) {
+-        super(NPN_WRAPPER, selectorFactory, listenerFactory, protocols);
+-    }
+-
+-    /**
+-     * Create a new instance.
+-     * @param selectorFactory The factory which provides classes responsible for selecting the protocol.
+-     * @param listenerFactory The factory which provides to be notified of which protocol was selected.
+-     * @param protocols The order of iteration determines the preference of support for protocols.
+-     */
+-    public JdkNpnApplicationProtocolNegotiator(ProtocolSelectorFactory selectorFactory,
+-            ProtocolSelectionListenerFactory listenerFactory, String... protocols) {
+-        super(NPN_WRAPPER, selectorFactory, listenerFactory, protocols);
+-    }
+-}
+diff --git a/handler/src/main/java/io/netty/handler/ssl/JdkNpnSslEngine.java b/handler/src/main/java/io/netty/handler/ssl/JdkNpnSslEngine.java
+deleted file mode 100644
+index 422727a..0000000
+--- a/handler/src/main/java/io/netty/handler/ssl/JdkNpnSslEngine.java
++++ /dev/null
+@@ -1,122 +0,0 @@
+-/*
+- * Copyright 2014 The Netty Project
+- *
+- * The Netty Project licenses this file to you under the Apache License,
+- * version 2.0 (the "License"); you may not use this file except in compliance
+- * with the License. You may obtain a copy of the License at:
+- *
+- *   http://www.apache.org/licenses/LICENSE-2.0
+- *
+- * Unless required by applicable law or agreed to in writing, software
+- * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+- * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+- * License for the specific language governing permissions and limitations
+- * under the License.
+- */
+-
+-package io.netty.handler.ssl;
+-
+-import static io.netty.util.internal.ObjectUtil.checkNotNull;
+-import io.netty.handler.ssl.JdkApplicationProtocolNegotiator.ProtocolSelectionListener;
+-import io.netty.handler.ssl.JdkApplicationProtocolNegotiator.ProtocolSelector;
+-import io.netty.util.internal.PlatformDependent;
+-
+-import java.util.LinkedHashSet;
+-import java.util.List;
+-
+-import javax.net.ssl.SSLEngine;
+-import javax.net.ssl.SSLException;
+-
+-import org.eclipse.jetty.npn.NextProtoNego;
+-import org.eclipse.jetty.npn.NextProtoNego.ClientProvider;
+-import org.eclipse.jetty.npn.NextProtoNego.ServerProvider;
+-
+-final class JdkNpnSslEngine extends JdkSslEngine {
+-    private static boolean available;
+-
+-    static boolean isAvailable() {
+-        updateAvailability();
+-        return available;
+-    }
+-
+-    private static void updateAvailability() {
+-        if (available) {
+-            return;
+-        }
+-        try {
+-            // Always use bootstrap class loader.
+-            Class.forName("sun.security.ssl.NextProtoNegoExtension", true, null);
+-            available = true;
+-        } catch (Exception ignore) {
+-            // npn-boot was not loaded.
+-        }
+-    }
+-
+-    JdkNpnSslEngine(SSLEngine engine, final JdkApplicationProtocolNegotiator applicationNegotiator, boolean server) {
+-        super(engine);
+-        checkNotNull(applicationNegotiator, "applicationNegotiator");
+-
+-        if (server) {
+-            final ProtocolSelectionListener protocolListener = checkNotNull(applicationNegotiator
+-                    .protocolListenerFactory().newListener(this, applicationNegotiator.protocols()),
+-                    "protocolListener");
+-            NextProtoNego.put(engine, new ServerProvider() {
+-                @Override
+-                public void unsupported() {
+-                    protocolListener.unsupported();
+-                }
+-
+-                @Override
+-                public List<String> protocols() {
+-                    return applicationNegotiator.protocols();
+-                }
+-
+-                @Override
+-                public void protocolSelected(String protocol) {
+-                    try {
+-                        protocolListener.selected(protocol);
+-                    } catch (Throwable t) {
+-                        PlatformDependent.throwException(t);
+-                    }
+-                }
+-            });
+-        } else {
+-            final ProtocolSelector protocolSelector = checkNotNull(applicationNegotiator.protocolSelectorFactory()
+-                    .newSelector(this, new LinkedHashSet<String>(applicationNegotiator.protocols())),
+-                    "protocolSelector");
+-            NextProtoNego.put(engine, new ClientProvider() {
+-                @Override
+-                public boolean supports() {
+-                    return true;
+-                }
+-
+-                @Override
+-                public void unsupported() {
+-                    protocolSelector.unsupported();
+-                }
+-
+-                @Override
+-                public String selectProtocol(List<String> protocols) {
+-                    try {
+-                        return protocolSelector.select(protocols);
+-                    } catch (Throwable t) {
+-                        PlatformDependent.throwException(t);
+-                        return null;
+-                    }
+-                }
+-            });
+-        }
+-    }
+-
+-    @Override
+-    public void closeInbound() throws SSLException {
+-        NextProtoNego.remove(getWrappedEngine());
+-        super.closeInbound();
+-    }
+-
+-    @Override
+-    public void closeOutbound() {
+-        NextProtoNego.remove(getWrappedEngine());
+-        super.closeOutbound();
+-    }
+-}
+diff --git a/handler/src/main/java/io/netty/handler/ssl/JdkSslContext.java b/handler/src/main/java/io/netty/handler/ssl/JdkSslContext.java
+index 0a120eb..cdad232 100644
+--- a/handler/src/main/java/io/netty/handler/ssl/JdkSslContext.java
++++ b/handler/src/main/java/io/netty/handler/ssl/JdkSslContext.java
+@@ -270,50 +270,6 @@ public class JdkSslContext extends SslContext {
+         switch(config.protocol()) {
+         case NONE:
+             return JdkDefaultApplicationProtocolNegotiator.INSTANCE;
+-        case ALPN:
+-            if (isServer) {
+-                switch(config.selectorFailureBehavior()) {
+-                case FATAL_ALERT:
+-                    return new JdkAlpnApplicationProtocolNegotiator(true, config.supportedProtocols());
+-                case NO_ADVERTISE:
+-                    return new JdkAlpnApplicationProtocolNegotiator(false, config.supportedProtocols());
+-                default:
+-                    throw new UnsupportedOperationException(new StringBuilder("JDK provider does not support ")
+-                    .append(config.selectorFailureBehavior()).append(" failure behavior").toString());
+-                }
+-            } else {
+-                switch(config.selectedListenerFailureBehavior()) {
+-                case ACCEPT:
+-                    return new JdkAlpnApplicationProtocolNegotiator(false, config.supportedProtocols());
+-                case FATAL_ALERT:
+-                    return new JdkAlpnApplicationProtocolNegotiator(true, config.supportedProtocols());
+-                default:
+-                    throw new UnsupportedOperationException(new StringBuilder("JDK provider does not support ")
+-                    .append(config.selectedListenerFailureBehavior()).append(" failure behavior").toString());
+-                }
+-            }
+-        case NPN:
+-            if (isServer) {
+-                switch(config.selectedListenerFailureBehavior()) {
+-                case ACCEPT:
+-                    return new JdkNpnApplicationProtocolNegotiator(false, config.supportedProtocols());
+-                case FATAL_ALERT:
+-                    return new JdkNpnApplicationProtocolNegotiator(true, config.supportedProtocols());
+-                default:
+-                    throw new UnsupportedOperationException(new StringBuilder("JDK provider does not support ")
+-                    .append(config.selectedListenerFailureBehavior()).append(" failure behavior").toString());
+-                }
+-            } else {
+-                switch(config.selectorFailureBehavior()) {
+-                case FATAL_ALERT:
+-                    return new JdkNpnApplicationProtocolNegotiator(true, config.supportedProtocols());
+-                case NO_ADVERTISE:
+-                    return new JdkNpnApplicationProtocolNegotiator(false, config.supportedProtocols());
+-                default:
+-                    throw new UnsupportedOperationException(new StringBuilder("JDK provider does not support ")
+-                    .append(config.selectorFailureBehavior()).append(" failure behavior").toString());
+-                }
+-            }
+         default:
+             throw new UnsupportedOperationException(new StringBuilder("JDK provider does not support ")
+             .append(config.protocol()).append(" protocol").toString());
+diff --git a/handler/src/test/java/io/netty/handler/ssl/JdkSslEngineTest.java b/handler/src/test/java/io/netty/handler/ssl/JdkSslEngineTest.java
+index 9a57230..090f996 100644
+--- a/handler/src/test/java/io/netty/handler/ssl/JdkSslEngineTest.java
++++ b/handler/src/test/java/io/netty/handler/ssl/JdkSslEngineTest.java
+@@ -15,262 +15,15 @@
+  */
+ package io.netty.handler.ssl;
+ 
+-import io.netty.handler.ssl.ApplicationProtocolConfig.Protocol;
+-import io.netty.handler.ssl.ApplicationProtocolConfig.SelectedListenerFailureBehavior;
+-import io.netty.handler.ssl.ApplicationProtocolConfig.SelectorFailureBehavior;
+-import io.netty.handler.ssl.JdkApplicationProtocolNegotiator.ProtocolSelector;
+-import io.netty.handler.ssl.JdkApplicationProtocolNegotiator.ProtocolSelectorFactory;
+-import io.netty.handler.ssl.util.InsecureTrustManagerFactory;
+-import io.netty.handler.ssl.util.SelfSignedCertificate;
+ import org.junit.Test;
+ 
+-import javax.net.ssl.SSLEngine;
+-import javax.net.ssl.SSLHandshakeException;
+-import java.util.List;
+-import java.util.Set;
+-import java.util.concurrent.TimeUnit;
+-
+-import static org.junit.Assert.assertNull;
+-import static org.junit.Assert.assertTrue;
+-import static org.junit.Assume.assumeNoException;
+-
+ public class JdkSslEngineTest extends SSLEngineTest {
+-    private static final String PREFERRED_APPLICATION_LEVEL_PROTOCOL = "my-protocol-http2";
+-    private static final String FALLBACK_APPLICATION_LEVEL_PROTOCOL = "my-protocol-http1_1";
+-    private static final String APPLICATION_LEVEL_PROTOCOL_NOT_COMPATIBLE = "my-protocol-FOO";
+-
+-    @Test
+-    public void testNpn() throws Exception {
+-        try {
+-            // Typical code will not have to check this, but will get a initialization error on class load.
+-            // Check in this test just in case we have multiple tests that just the class and we already ignored the
+-            // initialization error.
+-            if (!JdkNpnSslEngine.isAvailable()) {
+-                throw tlsExtensionNotFound(Protocol.NPN);
+-            }
+-            ApplicationProtocolConfig apn = failingNegotiator(Protocol.NPN,
+-                    PREFERRED_APPLICATION_LEVEL_PROTOCOL);
+-            setupHandlers(apn);
+-            runTest();
+-        } catch (SkipTestException e) {
+-            // NPN availability is dependent on the java version. If NPN is not available because of
+-            // java version incompatibility don't fail the test, but instead just skip the test
+-            assumeNoException(e);
+-        }
+-    }
+-
+-    @Test
+-    public void testNpnNoCompatibleProtocolsNoHandshakeFailure() throws Exception {
+-        try {
+-            // Typical code will not have to check this, but will get a initialization error on class load.
+-            // Check in this test just in case we have multiple tests that just the class and we already ignored the
+-            // initialization error.
+-            if (!JdkNpnSslEngine.isAvailable()) {
+-                throw tlsExtensionNotFound(Protocol.NPN);
+-            }
+-            ApplicationProtocolConfig clientApn = acceptingNegotiator(Protocol.NPN,
+-                    PREFERRED_APPLICATION_LEVEL_PROTOCOL);
+-            ApplicationProtocolConfig serverApn = acceptingNegotiator(Protocol.NPN,
+-                    APPLICATION_LEVEL_PROTOCOL_NOT_COMPATIBLE);
+-            setupHandlers(serverApn, clientApn);
+-            runTest(null);
+-        } catch (SkipTestException e) {
+-            // ALPN availability is dependent on the java version. If ALPN is not available because of
+-            // java version incompatibility don't fail the test, but instead just skip the test
+-            assumeNoException(e);
+-        }
+-    }
+-
+-    @Test
+-    public void testNpnNoCompatibleProtocolsClientHandshakeFailure() throws Exception {
+-        try {
+-            // Typical code will not have to check this, but will get a initialization error on class load.
+-            // Check in this test just in case we have multiple tests that just the class and we already ignored the
+-            // initialization error.
+-            if (!JdkNpnSslEngine.isAvailable()) {
+-                throw tlsExtensionNotFound(Protocol.NPN);
+-            }
+-            ApplicationProtocolConfig clientApn = failingNegotiator(Protocol.NPN,
+-                    PREFERRED_APPLICATION_LEVEL_PROTOCOL);
+-            ApplicationProtocolConfig serverApn = acceptingNegotiator(Protocol.NPN,
+-                    APPLICATION_LEVEL_PROTOCOL_NOT_COMPATIBLE);
+-            setupHandlers(serverApn, clientApn);
+-            assertTrue(clientLatch.await(2, TimeUnit.SECONDS));
+-            assertTrue(clientException instanceof SSLHandshakeException);
+-        } catch (SkipTestException e) {
+-            // NPN availability is dependent on the java version. If NPN is not available because of
+-            // java version incompatibility don't fail the test, but instead just skip the test
+-            assumeNoException(e);
+-        }
+-    }
+-
+-    @Test
+-    public void testNpnNoCompatibleProtocolsServerHandshakeFailure() throws Exception {
+-        try {
+-            // Typical code will not have to check this, but will get a initialization error on class load.
+-            // Check in this test just in case we have multiple tests that just the class and we already ignored the
+-            // initialization error.
+-            if (!JdkNpnSslEngine.isAvailable()) {
+-                throw tlsExtensionNotFound(Protocol.NPN);
+-            }
+-            ApplicationProtocolConfig clientApn = acceptingNegotiator(Protocol.NPN,
+-                    PREFERRED_APPLICATION_LEVEL_PROTOCOL);
+-            ApplicationProtocolConfig serverApn = failingNegotiator(Protocol.NPN,
+-                    APPLICATION_LEVEL_PROTOCOL_NOT_COMPATIBLE);
+-            setupHandlers(serverApn, clientApn);
+-            assertTrue(serverLatch.await(2, TimeUnit.SECONDS));
+-            assertTrue(serverException instanceof SSLHandshakeException);
+-        } catch (SkipTestException e) {
+-            // NPN availability is dependent on the java version. If NPN is not available because of
+-            // java version incompatibility don't fail the test, but instead just skip the test
+-            assumeNoException(e);
+-        }
+-    }
+-
+-    @Test
+-    public void testAlpn() throws Exception {
+-        try {
+-            // Typical code will not have to check this, but will get a initialization error on class load.
+-            // Check in this test just in case we have multiple tests that just the class and we already ignored the
+-            // initialization error.
+-            if (!JdkAlpnSslEngine.isAvailable()) {
+-                throw tlsExtensionNotFound(Protocol.ALPN);
+-            }
+-            ApplicationProtocolConfig apn = failingNegotiator(Protocol.ALPN,
+-                    PREFERRED_APPLICATION_LEVEL_PROTOCOL);
+-            setupHandlers(apn);
+-            runTest();
+-        } catch (SkipTestException e) {
+-            // ALPN availability is dependent on the java version. If ALPN is not available because of
+-            // java version incompatibility don't fail the test, but instead just skip the test
+-            assumeNoException(e);
+-        }
+-    }
+-
+-    @Test
+-    public void testAlpnNoCompatibleProtocolsNoHandshakeFailure() throws Exception {
+-        try {
+-            // Typical code will not have to check this, but will get a initialization error on class load.
+-            // Check in this test just in case we have multiple tests that just the class and we already ignored the
+-            // initialization error.
+-            if (!JdkAlpnSslEngine.isAvailable()) {
+-                throw tlsExtensionNotFound(Protocol.ALPN);
+-            }
+-            ApplicationProtocolConfig clientApn = acceptingNegotiator(Protocol.ALPN,
+-                    PREFERRED_APPLICATION_LEVEL_PROTOCOL);
+-            ApplicationProtocolConfig serverApn = acceptingNegotiator(Protocol.ALPN,
+-                    APPLICATION_LEVEL_PROTOCOL_NOT_COMPATIBLE);
+-            setupHandlers(serverApn, clientApn);
+-            runTest(null);
+-        } catch (SkipTestException e) {
+-            // ALPN availability is dependent on the java version. If ALPN is not available because of
+-            // java version incompatibility don't fail the test, but instead just skip the test
+-            assumeNoException(e);
+-        }
+-    }
+-
+-    @Test
+-    public void testAlpnNoCompatibleProtocolsServerHandshakeFailure() throws Exception {
+-        try {
+-            // Typical code will not have to check this, but will get a initialization error on class load.
+-            // Check in this test just in case we have multiple tests that just the class and we already ignored the
+-            // initialization error.
+-            if (!JdkAlpnSslEngine.isAvailable()) {
+-                throw tlsExtensionNotFound(Protocol.ALPN);
+-            }
+-            ApplicationProtocolConfig clientApn = acceptingNegotiator(Protocol.ALPN,
+-                    PREFERRED_APPLICATION_LEVEL_PROTOCOL);
+-            ApplicationProtocolConfig serverApn = failingNegotiator(Protocol.ALPN,
+-                    APPLICATION_LEVEL_PROTOCOL_NOT_COMPATIBLE);
+-            setupHandlers(serverApn, clientApn);
+-            assertTrue(serverLatch.await(2, TimeUnit.SECONDS));
+-            assertTrue(serverException instanceof SSLHandshakeException);
+-        } catch (SkipTestException e) {
+-            // ALPN availability is dependent on the java version. If ALPN is not available because of
+-            // java version incompatibility don't fail the test, but instead just skip the test
+-            assumeNoException(e);
+-        }
+-    }
+-
+-    @Test
+-    public void testAlpnCompatibleProtocolsDifferentClientOrder() throws Exception {
+-        try {
+-            // Typical code will not have to check this, but will get a initialization error on class load.
+-            // Check in this test just in case we have multiple tests that just the class and we already ignored the
+-            // initialization error.
+-            if (!JdkAlpnSslEngine.isAvailable()) {
+-                throw tlsExtensionNotFound(Protocol.ALPN);
+-            }
+-            // Even the preferred application protocol appears second in the client's list, it will be picked
+-            // because it's the first one on server's list.
+-            ApplicationProtocolConfig clientApn = acceptingNegotiator(Protocol.ALPN,
+-                FALLBACK_APPLICATION_LEVEL_PROTOCOL, PREFERRED_APPLICATION_LEVEL_PROTOCOL);
+-            ApplicationProtocolConfig serverApn = failingNegotiator(Protocol.ALPN,
+-                PREFERRED_APPLICATION_LEVEL_PROTOCOL, FALLBACK_APPLICATION_LEVEL_PROTOCOL);
+-            setupHandlers(serverApn, clientApn);
+-            assertNull(serverException);
+-            runTest(PREFERRED_APPLICATION_LEVEL_PROTOCOL);
+-        } catch (SkipTestException e) {
+-            // ALPN availability is dependent on the java version. If ALPN is not available because of
+-            // java version incompatibility don't fail the test, but instead just skip the test
+-            assumeNoException(e);
+-        }
+-    }
+-
+-    @Test
+-    public void testAlpnNoCompatibleProtocolsClientHandshakeFailure() throws Exception {
+-        try {
+-            // Typical code will not have to check this, but will get a initialization error on class load.
+-            // Check in this test just in case we have multiple tests that just the class and we already ignored the
+-            // initialization error.
+-            if (!JdkAlpnSslEngine.isAvailable()) {
+-                throw tlsExtensionNotFound(Protocol.ALPN);
+-            }
+-            SelfSignedCertificate ssc = new SelfSignedCertificate();
+-            JdkApplicationProtocolNegotiator clientApn = new JdkAlpnApplicationProtocolNegotiator(true, true,
+-                    PREFERRED_APPLICATION_LEVEL_PROTOCOL);
+-            JdkApplicationProtocolNegotiator serverApn = new JdkAlpnApplicationProtocolNegotiator(
+-                    new ProtocolSelectorFactory() {
+-                        @Override
+-                        public ProtocolSelector newSelector(SSLEngine engine, Set<String> supportedProtocols) {
+-                            return new ProtocolSelector() {
+-                                @Override
+-                                public void unsupported() {
+-                                }
+-
+-                                @Override
+-                                public String select(List<String> protocols) {
+-                                    return APPLICATION_LEVEL_PROTOCOL_NOT_COMPATIBLE;
+-                                }
+-                            };
+-                        }
+-                    }, JdkBaseApplicationProtocolNegotiator.FAIL_SELECTION_LISTENER_FACTORY,
+-                    APPLICATION_LEVEL_PROTOCOL_NOT_COMPATIBLE);
+-
+-            SslContext serverSslCtx = new JdkSslServerContext(ssc.certificate(), ssc.privateKey(), null, null,
+-                    IdentityCipherSuiteFilter.INSTANCE, serverApn, 0, 0);
+-            SslContext clientSslCtx = new JdkSslClientContext(null, InsecureTrustManagerFactory.INSTANCE, null,
+-                    IdentityCipherSuiteFilter.INSTANCE, clientApn, 0, 0);
+-
+-            setupHandlers(serverSslCtx, clientSslCtx);
+-            assertTrue(clientLatch.await(2, TimeUnit.SECONDS));
+-            assertTrue(clientException instanceof SSLHandshakeException);
+-        } catch (SkipTestException e) {
+-            // ALPN availability is dependent on the java version. If ALPN is not available because of
+-            // java version incompatibility don't fail the test, but instead just skip the test
+-            assumeNoException(e);
+-        }
+-    }
+ 
+     @Test
+     public void testEnablingAnAlreadyDisabledSslProtocol() throws Exception {
+         testEnablingAnAlreadyDisabledSslProtocol(new String[]{}, new String[]{PROTOCOL_TLS_V1_2});
+     }
+ 
+-    private void runTest() throws Exception {
+-        runTest(PREFERRED_APPLICATION_LEVEL_PROTOCOL);
+-    }
+-
+     @Override
+     protected SslProvider sslClientProvider() {
+         return SslProvider.JDK;
+@@ -280,30 +33,4 @@ public class JdkSslEngineTest extends SSLEngineTest {
+     protected SslProvider sslServerProvider() {
+         return SslProvider.JDK;
+     }
+-
+-    private ApplicationProtocolConfig failingNegotiator(Protocol protocol,
+-                                                        String... supportedProtocols) {
+-        return new ApplicationProtocolConfig(protocol,
+-                SelectorFailureBehavior.FATAL_ALERT,
+-                SelectedListenerFailureBehavior.FATAL_ALERT,
+-                supportedProtocols);
+-    }
+-
+-    private ApplicationProtocolConfig acceptingNegotiator(Protocol protocol,
+-                                                          String... supportedProtocols) {
+-        return new ApplicationProtocolConfig(protocol,
+-                SelectorFailureBehavior.NO_ADVERTISE,
+-                SelectedListenerFailureBehavior.ACCEPT,
+-                supportedProtocols);
+-    }
+-
+-    private SkipTestException tlsExtensionNotFound(Protocol protocol) {
+-        throw new SkipTestException(protocol + " not on classpath");
+-    }
+-
+-    private static final class SkipTestException extends RuntimeException {
+-        public SkipTestException(String message) {
+-            super(message);
+-        }
+-    }
+ }
+-- 
+2.7.4
+
