@@ -8,7 +8,7 @@
 
 Name:           %{?scl_prefix}netty
 Version:        4.0.42
-Release:        5.1%{?dist}
+Release:        6.1%{?dist}
 Summary:        An asynchronous event-driven network application framework and tools for Java
 License:        ASL 2.0
 URL:            https://netty.io/
@@ -33,7 +33,7 @@ BuildRequires:  %{?scl_prefix_maven}mvn(org.sonatype.oss:oss-parent:pom:)
 
 BuildRequires:  %{?scl_prefix}mvn(kr.motd.maven:os-maven-plugin)
 BuildRequires:  %{?scl_prefix}mvn(org.apache.logging.log4j:log4j-api)
-BuildRequires:  %{?scl_prefix}mvn(org.jctools:jctools-core)
+BuildRequires:  %{?scl_prefix}osgi(org.jctools.core)
 
 %description
 Netty is a NIO client server framework which enables quick and easy
@@ -134,6 +134,9 @@ export CFLAGS="$RPM_OPT_FLAGS" LDFLAGS="$RPM_LD_FLAGS"
 %doc LICENSE.txt NOTICE.txt
 
 %changelog
+* Mon Aug 07 2017 Marek Skalický <mskalick@redhat.com> - 4.0.42-6.1
+- Rebuild for rh-maven35 dependency removal
+
 * Fri Jun 23 2017 Michael Simacek <msimacek@redhat.com> - 4.0.42-5.1
 - Package import and sclization
 
